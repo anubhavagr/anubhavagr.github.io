@@ -125,6 +125,23 @@
         <span class="case-card__arrow">read case study →</span>
       </a>`).join("");
   }
+  function renderLab() {
+    const host = $("#lab-grid");
+    if (!host || !window.SITE_DATA) return;
+    host.innerHTML = window.SITE_DATA.lab.map((p) => `
+      <a class="lab-card reveal" href="${p.href}" target="_blank" rel="noopener">
+        <div class="lab-card__media">
+          <img src="${p.img}" alt="${p.alt || ""}" loading="lazy" />
+        </div>
+        <div class="lab-card__body">
+          <span class="lab-card__repo">${p.repo}</span>
+          <h3>${p.title}</h3>
+          <p>${p.hook}</p>
+          <div class="chips">${p.chips.map((c) => `<span class="chip">${c}</span>`).join("")}</div>
+          <span class="lab-card__arrow">open repo →</span>
+        </div>
+      </a>`).join("");
+  }
   function renderProjects() {
     const host = $("#proj-grid");
     if (!host || !window.SITE_DATA) return;
@@ -132,13 +149,14 @@
       <a class="proj-card reveal" href="${p.href}" target="_blank" rel="noopener">
         <div class="proj-card__top">
           <h3>${p.name}</h3>
-          <span class="proj-card__note">${p.stars} →</span>
+          <span class="proj-card__note">${p.note || ""} →</span>
         </div>
         <p>${p.desc}</p>
         <div class="chips">${p.chips.map((c) => `<span class="chip">${c}</span>`).join("")}</div>
       </a>`).join("");
   }
   renderWork();
+  renderLab();
   renderProjects();
   observeReveals(); // enroll the freshly injected cards
 

@@ -12,6 +12,6 @@
   <text x="80" y="320" font-family="Inter, sans-serif" font-weight="800" font-size="96" fill="#e8edf7">Machine Learning Engineer</text>
   <text x="80" y="400" font-family="Inter, sans-serif" font-size="34" fill="#aab4cc">Computer Vision · LLMs / RAG · Production Inference</text>
   <g font-family="JetBrains Mono, monospace" font-size="30" fill="#e8edf7">
-    <text x="80" y="520"><tspan fill="#38e0c8">$200K+ ARR</tspan>  ·  <tspan fill="#7c9cff">600+ FPS</tspan>  ·  <tspan fill="#b794ff">0.95 Recall@5</tspan>  ·  3 Patents</text>
+    <text x="80" y="520"><tspan fill="#38e0c8">$200K+ ARR</tspan>  ·  <tspan fill="#7c9cff">600+ FPS</tspan>  ·  <tspan fill="#b794ff">0.95 Recall@5</tspan></text>
   </g>
 </svg>

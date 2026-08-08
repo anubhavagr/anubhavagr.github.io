@@ -8,7 +8,7 @@ Live at **[anubhavagr.github.io](https://anubhavagr.github.io/)**.
 Zero build step. Plain HTML + CSS + vanilla JS, served statically by GitHub Pages.
 
 ```
-index.html                      # landing (hero, work, experience, projects, skills, patents, contact)
+index.html                      # landing (hero, work, open source, experience, skills, contact)
 projects/
   aimag.html                    # case study — X-ray super-resolution product ($200K+ ARR)
   adaptive-rag.html             # case study — stateful LangGraph RAG agent
