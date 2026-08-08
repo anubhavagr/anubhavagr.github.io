@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adaptive RAG — Stateful LangGraph Agent · Anubhav Agrawal</title>
+  <meta name="description" content="Case study: a production RAG system with 3 parallel retrieval paths, hybrid search and cross-encoder re-ranking — 0.95 Recall@5, 68% latency cut for 500+ users." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__mark">AA</span>
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#projects">Projects</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+        <button id="theme-toggle" class="nav__theme" aria-label="Toggle color theme">
+          <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#work">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All work
+          </a>
+          <span class="card__tag">LLMs · Retrieval-Augmented Generation · Production</span>
+          <h1 style="margin-top:.8rem;">Adaptive RAG — a stateful retrieval agent at production scale</h1>
+          <p class="sub">The retrieval &amp; evaluation infrastructure behind a stateful interviewer agent — <strong>0.95 Recall@5</strong> over 10K+ docs, <strong>68% latency cut</strong> for <strong>500+ concurrent users</strong>.</p>
+
+          <div class="article__meta">
+            <div><b>Role</b><span>AI Engineer — 2</span></div>
+            <div><b>Recall@5</b><span>0.95</span></div>
+            <div><b>p50 latency</b><span>0.8s (−68%)</span></div>
+            <div><b>Users</b><span>500+ concurrent</span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">I architected a <strong>3-path RAG pipeline</strong> with hybrid keyword + dense
+            search and cross-encoder re-ranking, behind a stateful <strong>LangGraph</strong> agent that adapts
+            question difficulty in real time. Latency dropped from <strong>2.5s to 0.8s</strong>, domain-query
+            <strong>F1 rose 42%</strong>, and the system serves <strong>500+ users at 99.9% uptime</strong>.</p>
+          </div>
+
+          <h2>The system</h2>
+          <p>The product is an AI interviewer that runs a real conversation: it scores the candidate's answer,
+          adapts the difficulty of the next question, and follows up with targeted probes. Doing that credibly
+          requires retrieving the right context — fast — from a large, heterogeneous knowledge corpus.</p>
+
+          <h2>What I built</h2>
+
+          <h3>1. The adaptive-intelligence core (LangGraph)</h3>
+          <p>A stateful <strong>LangGraph</strong> agent where each node is a reasoned step: scoring the response,
+          deciding difficulty scaling, and retrieval-conditioning each <em>counter</em> and <em>follow-up probe</em>
+          so the agent argues like an interviewer, not a chatbot. State is carried across turns so the conversation
+          stays coherent over long sessions.</p>
+
+          <h3>2. Three parallel retrieval paths</h3>
+          <p>A single dense index wasn't enough — the corpus has very different shapes. I built three retrieval
+          paths that run in parallel and fuse their results:</p>
+          <ul>
+            <li><strong>Conversation embeddings</strong> — semantic match over the live dialogue for short-term context.</li>
+            <li><strong>MongoDB lookup</strong> — structured / relational signals (candidate state, rubric metadata).</li>
+            <li><strong>Knowledge vault</strong> — a deep domain index over <strong>10K+ documents</strong> using <strong>512-d</strong> embeddings.</li>
+          </ul>
+          <p>Each path contributes candidates to a <strong>hybrid keyword + dense</strong> ranking, then a
+          <strong>cross-encoder re-ranker</strong> re-scores the top-K with full query-document attention.</p>
+          <blockquote>
+            Reached <strong>0.95 Recall@5</strong> over <strong>10K+ docs</strong> — vs. a noticeably weaker
+            single-path baseline.
+          </blockquote>
+
+          <h3>3. Latency: 2.5s → 0.8s</h3>
+          <p>Three retrieval paths sounds expensive. It isn't, when orchestrated well:</p>
+          <ul>
+            <li><strong>Async orchestration</strong> — the three paths run concurrently, not sequentially; we wait on the slowest, not the sum.</li>
+            <li><strong>Context fusion</strong> — candidates are deduped, re-ranked once, and only the fused top-K is passed to the LLM, shrinking the prompt.</li>
+            <li><strong>Right-sized embeddings</strong> — 512-d gave us the recall we needed without the cost of 1K+ vectors.</li>
+          </ul>
+          <p>Net: query latency fell from <strong>2.5s to 0.8s (−68%)</strong>, and domain-query <strong>F1 rose 42%</strong>
+          vs. the single-path baseline.</p>
+
+          <h3>4. Evaluation &amp; guardrails</h3>
+          <p>I don't trust LLM output without measurement. I stood up an <strong>eval harness</strong> that scores
+          every change on:</p>
+          <ul>
+            <li><strong>Recall@k</strong> — is the right context being retrieved?</li>
+            <li><strong>Faithfulness</strong> — is the answer grounded in retrieved context, not invented?</li>
+            <li><strong>Answer-relevance</strong> — does it actually answer the question?</li>
+          </ul>
+          <p>Plus <strong>LLM guardrails with citations</strong> so every claim is traceable to a source — safe,
+          grounded outputs by construction, not by hope.</p>
+
+          <h2>Outcome</h2>
+          <ul>
+            <li><strong>0.95 Recall@5</strong> over <strong>10K+ docs</strong>.</li>
+            <li>Query latency <strong>2.5s → 0.8s (−68%)</strong>.</li>
+            <li>Domain-query <strong>F1 +42%</strong> vs. single-path baseline.</li>
+            <li><strong>500+ concurrent users</strong> at <strong>99.9% uptime</strong>.</li>
+          </ul>
+
+          <h2>What I learned</h2>
+          <p>Retrieval quality is a system property, not an embedding property. The wins came from the
+          <em>topology</em> — parallel paths, hybrid search, cross-encoder re-ranking — and from making the eval
+          harness the source of truth so every optimization was a measured bet, not a guess.</p>
+
+          <p style="margin-top:2rem;">
+            <a class="btn btn--primary btn--sm" href="../index.html#contact">Work with me →</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#work">See the other case study</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

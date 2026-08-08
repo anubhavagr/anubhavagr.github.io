@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38e0c8"/>
+      <stop offset="0.55" stop-color="#7c9cff"/>
+      <stop offset="1" stop-color="#b794ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#070b14"/>
+  <rect width="1200" height="630" fill="url(#g)" opacity="0.06"/>
+  <text x="80" y="180" font-family="Inter, sans-serif" font-size="28" fill="#38e0c8" letter-spacing="6">ANUBHAV AGRAWAL</text>
+  <text x="80" y="320" font-family="Inter, sans-serif" font-weight="800" font-size="96" fill="#e8edf7">Machine Learning Engineer</text>
+  <text x="80" y="400" font-family="Inter, sans-serif" font-size="34" fill="#aab4cc">Computer Vision · LLMs / RAG · Production Inference</text>
+  <g font-family="JetBrains Mono, monospace" font-size="30" fill="#e8edf7">
+    <text x="80" y="520"><tspan fill="#38e0c8">$200K+ ARR</tspan>  ·  <tspan fill="#7c9cff">600+ FPS</tspan>  ·  <tspan fill="#b794ff">0.95 Recall@5</tspan>  ·  3 Patents</text>
+  </g>
+</svg>
