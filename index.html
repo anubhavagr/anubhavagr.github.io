@@ -1,181 +1,429 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anubhav Agrawal | AI Engineer Portfolio</title>
-    <!-- Simple CSS Reset and Google Fonts -->
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --text-color: #f8fafc;
-            --accent-color: #38bdf8;
-            --card-bg: #1e293b;
-            --muted-text: #94a3b8;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#070b14" />
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <title>Anubhav Agrawal — Machine Learning Engineer</title>
+  <meta name="description" content="ML Engineer with 3+ years shipping production AI — computer vision at $200K+ ARR (600+ FPS, 3 patents) and production LLM/RAG systems (0.95 Recall@5, 68% latency cut for 500+ users)." />
+  <meta name="author" content="Anubhav Agrawal" />
+  <link rel="canonical" href="https://anubhavagr.github.io/" />
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            line-height: 1.6;
-            padding: 2rem 1rem;
-        }
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Anubhav Agrawal — Machine Learning Engineer" />
+  <meta property="og:description" content="Production computer vision & LLM/RAG systems. $200K+ ARR CV product line, 3 patents, 0.95 Recall@5 retrieval." />
+  <meta property="og:url" content="https://anubhavagr.github.io/" />
+  <meta property="og:image" content="assets/img/og.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
+  <!-- Icons -->
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
 
-        header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
+  <!-- Styles -->
+  <link rel="stylesheet" href="assets/css/styles.css" />
 
-        .subtitle {
-            font-size: 1.2rem;
-            color: var(--accent-color);
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-
-        .bio {
-            color: var(--muted-text);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        section {
-            margin-bottom: 3rem;
-        }
-
-        h2 {
-            font-size: 1.5rem;
-            border-bottom: 2px solid var(--card-bg);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .skills-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
-        .skill-badge {
-            background-color: var(--card-bg);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            border: 1px solid #334155;
-        }
-
-        .project-card {
-            background-color: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            border: 1px solid #334155;
-        }
-
-        .project-card h3 {
-            color: var(--accent-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .project-card p {
-            color: var(--muted-text);
-            font-size: 0.95rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .project-tags {
-            display: flex;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            color: var(--accent-color);
-        }
-
-        footer {
-            text-align: center;
-            margin-top: 4rem;
-            color: var(--muted-text);
-            font-size: 0.9rem;
-        }
-
-        footer a {
-            color: var(--accent-color);
-            text-decoration: none;
-        }
-
-        footer a:hover {
-            text-decoration: underline;
-        }
-    </style>
+  <!-- Structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Anubhav Agrawal",
+    "jobTitle": "Machine Learning Engineer",
+    "url": "https://anubhavagr.github.io/",
+    "email": "mailto:anubhavagr.mail@gmail.com",
+    "address": { "@type": "PostalAddress", "addressCountry": "IN" },
+    "sameAs": ["https://github.com/anubhavagr", "https://www.linkedin.com/in/anubhav-agrawal-547a3419b"],
+    "knowsAbout": ["Machine Learning", "Deep Learning", "Computer Vision", "Large Language Models", "Retrieval-Augmented Generation", "Model Optimization", "TensorRT"]
+  }
+  </script>
 </head>
+
 <body>
+  <!-- ============================================================== NAV -->
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="#top" aria-label="Anubhav Agrawal — home">
+        <span class="brand__mark">AA</span>
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
 
-    <div class="container">
-        <!-- Header Section -->
-        <header>
-            <h1>Anubhav Agrawal</h1>
-            <div class="subtitle">AI Engineer</div>
-            <p class="bio">Building intelligent systems, fine-tuning neural networks, and deploying scalable machine learning pipelines.</p>
-        </header>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="#work">Work</a>
+        <a href="#experience">Experience</a>
+        <a href="#projects">Projects</a>
+        <a href="#skills">Skills</a>
+        <a href="#patents">Patents</a>
+        <a href="#contact">Contact</a>
+      </nav>
 
-        <!-- Tech Stack Section -->
-        <section>
-            <h2>Core Tech Stack</h2>
-            <div class="skills-grid">
-                <span class="skill-badge">Python</span>
-                <span class="skill-badge">PyTorch</span>
-                <span class="skill-badge">TensorFlow</span>
-                <span class="skill-badge">Hugging Face</span>
-                <span class="skill-badge">LLMs & GenAI</span>
-                <span class="skill-badge">LangChain</span>
-                <span class="skill-badge">Docker</span>
-                <span class="skill-badge">SQL & Vector DBs</span>
-                <span class="skill-badge">Git</span>
-            </div>
-        </section>
-
-        <!-- Projects Section Placeholder -->
-        <section>
-            <h2>Featured Projects</h2>
-            
-            <div class="project-card">
-                <h3>Project Title One</h3>
-                <p>A brief description of your AI project. Explain what problem it solves, the model architecture used, and the final results achieved.</p>
-                <div class="project-tags">#PyTorch #LLM #API</div>
-            </div>
-
-            <div class="project-card">
-                <h3>Project Title Two</h3>
-                <p>Another impressive machine learning repository description detailing data preprocessing pipelines and deployment strategies.</p>
-                <div class="project-tags">#LangChain #VectorDB #Python</div>
-            </div>
-        </section>
-
-        <!-- Footer Section -->
-        <footer>
-            <p>Connect with me on <a href="https://github.com" target="_blank">GitHub</a></p>
-        </footer>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="assets/anubhav-agrawal-resume.pdf" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Résumé
+        </a>
+        <button id="theme-toggle" class="nav__theme" aria-label="Toggle color theme">
+          <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
+        <button id="burger" class="nav__burger" aria-label="Toggle menu" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
     </div>
+  </header>
 
+  <main id="top">
+  <!-- ============================================================== HERO -->
+  <section class="hero">
+    <div class="container">
+      <span class="hero__status reveal"><span class="dot"></span> Open to senior ML / AI Engineer roles</span>
+      <h1 class="reveal" data-d="1">
+        Building <span class="grad">production AI</span><br />
+        that earns revenue &amp; ships at scale.
+      </h1>
+      <div class="hero__role reveal" data-d="2">ML Engineer · Computer Vision · LLMs / RAG</div>
+      <p class="hero__lead lead reveal" data-d="2">
+        3+ years owning AI products end-to-end — from model design to real-time production deployment.
+        Shipped a <strong>$200K+ ARR</strong> computer-vision line (<strong>600+ FPS</strong>, <strong>3 patents</strong>),
+        then built the retrieval &amp; evaluation infrastructure for a production LLM system —
+        cutting query latency <strong>68%</strong> for <strong>500+ concurrent users</strong>.
+      </p>
+
+      <div class="hero__actions reveal" data-d="3">
+        <a class="btn btn--primary" href="#work">View selected work</a>
+        <a class="btn btn--ghost" href="https://github.com/anubhavagr" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+          GitHub
+        </a>
+        <a class="btn btn--ghost" href="#contact">Get in touch</a>
+      </div>
+
+      <!-- Headline metrics -->
+      <div class="metrics reveal" data-d="4" role="list">
+        <div class="metric" role="listitem">
+          <div class="metric__value">$200K+</div>
+          <div class="metric__label">ARR shipped · CV product line</div>
+        </div>
+        <div class="metric" role="listitem">
+          <div class="metric__value">600+<span style="font-size:.6em;color:var(--text-mute)"> FPS</span></div>
+          <div class="metric__label">Real-time inference · TensorRT</div>
+        </div>
+        <div class="metric" role="listitem">
+          <div class="metric__value">−68%</div>
+          <div class="metric__label">LLM query latency · 500+ users</div>
+        </div>
+        <div class="metric" role="listitem">
+          <div class="metric__value">3</div>
+          <div class="metric__label">Patents applied · medical AI</div>
+        </div>
+      </div>
+
+      <p data-updated-wrap class="is-hidden" style="margin-top:1.2rem;font-family:var(--font-mono);font-size:.78rem;color:var(--text-mute);">
+        résumé last updated: <span id="resume-updated">—</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================== ABOUT -->
+  <section class="section" id="about">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Profile</span>
+        <h2>Senior-level ownership, from research to revenue.</h2>
+      </div>
+      <div class="grid grid--2">
+        <div class="card reveal">
+          <h3>Model R&amp;D → production</h3>
+          <p>I take models from literature and whiteboards to clinical and product environments —
+          designing the architecture, the training loop, the quantization path and the serving stack,
+          then owning the release through validation.</p>
+        </div>
+        <div class="card reveal" data-d="1">
+          <h3>Performance is a feature</h3>
+          <p>I treat latency, VRAM and throughput as first-class metrics. PyTorch → ONNX → TensorRT with
+          INT8/FP16 quantization, async orchestration, and hybrid retrieval have repeatedly turned
+          research prototypes into real-time products.</p>
+        </div>
+        <div class="card reveal" data-d="2">
+          <h3>Eval over vibes</h3>
+          <p>For LLM systems I stand up eval harnesses (recall, faithfulness, answer-relevance) and
+          guardrails with citations — because &ldquo;it looks fine&rdquo; is not a launch criterion for
+          grounded outputs.</p>
+        </div>
+        <div class="card reveal" data-d="3">
+          <h3>Team &amp; roadmap</h3>
+          <p>I&rsquo;ve led a 6-engineer ML team — owning roadmap, review standards and the lifecycle
+          through clinical validation, and mentoring across research, engineering and DevOps.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== WORK -->
+  <section class="section" id="work">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Selected Work</span>
+        <h2>Two systems, two domains, one standard.</h2>
+        <p>The flagship work I'm proudest of — a real-time computer-vision product line in clinical use,
+        and a stateful retrieval-augmented LLM agent serving concurrent users.</p>
+      </div>
+      <div id="cases" class="grid" style="grid-template-columns:1fr; gap:1.4rem;">
+        <!-- rendered by main.js -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== EXPERIENCE -->
+  <section class="section" id="experience">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Experience</span>
+        <h2>Where I've shipped.</h2>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-item reveal">
+          <div class="tl-head">
+            <h3>Griphic <span class="org">— Delhi</span></h3>
+            <span class="when">Jan 2026 — Present</span>
+          </div>
+          <div class="tl-role">AI Engineer — 2</div>
+          <ul>
+            <li>Engineered the <b>adaptive-intelligence core</b>: a stateful <b>LangGraph</b> agent that scores responses, scales question difficulty live, and retrieval-conditions each counter and follow-up probe into an interviewer-grade assessment.</li>
+            <li>Architected a <b>RAG pipeline with 3 parallel retrieval paths</b> (conversation embeddings, MongoDB, knowledge vault) with hybrid keyword + dense search and cross-encoder re-ranking — <b>0.95 Recall@5</b> over <b>10K+ docs</b> using 512-d embeddings.</li>
+            <li>Cut query latency <b>2.5s → 0.8s (−68%)</b> via context-fusion &amp; async orchestration; raised domain-query <b>F1 by 42%</b> vs. single-path baseline; serves <b>500+ users</b> at <b>99.9% uptime</b>.</li>
+            <li>Stood up an <b>eval harness</b> (recall, faithfulness, answer-relevance) and <b>LLM guardrails</b> with citations for safe, grounded outputs.</li>
+          </ul>
+        </div>
+
+        <div class="tl-item reveal" data-d="1">
+          <div class="tl-head">
+            <h3>Innvolution Healthcare <span class="org">— Bangalore</span></h3>
+            <span class="when">Sep 2023 — Dec 2025</span>
+          </div>
+          <div class="tl-role">Machine Learning Engineer &amp; Team Lead</div>
+          <ul>
+            <li>Owned <b>AIMAG</b> — data, model R&amp;D, quantization and release — an X-ray super-resolution &amp; denoising product at <b>$200K+ ARR</b>.</li>
+            <li>Built the serving stack: <b>PyTorch → ONNX → TensorRT</b> with <b>INT8/FP16 quantization</b> + <b>FastAPI</b> (C++); <b>600+ FPS</b> on RTX 4090 (<b>−70% latency</b>), multi-scale upsampling at <b>&lt;5% loss</b> and <b>−35% VRAM</b>.</li>
+            <li>Built an automatic <b>QCA</b> pipeline (segmentation → calibration → prediction) delivering measurements in <b>&lt;4 s</b>.</li>
+            <li>Fine-tuned <b>U-Net++ (ResNet50 + attention)</b> for coronary segmentation at <b>0.94 Dice</b>.</li>
+            <li>Led a <b>6-engineer ML team</b>, owning roadmap, review standards and the lifecycle through <b>clinical validation</b>.</li>
+          </ul>
+          <div style="margin-left:0; padding-left:0; margin-top:.6rem;">
+            <div class="tl-role" style="margin:0 0 .3rem;">Image Quality Engineer Intern · Nov 2022 — May 2023</div>
+            <ul>
+              <li>Built motion-compensated stitching &amp; denoising for <b>DSA</b> sequences — <b>+20% clarity</b> at <b>&lt;2-px</b> alignment error via optical-flow registration.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== PROJECTS -->
+  <section class="section" id="projects">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Open Source</span>
+        <h2>Things I've built in the open.</h2>
+        <p>Selected repositories — medical imaging, retrieval systems and deep-learning implementations.</p>
+      </div>
+      <div id="projects" class="grid grid--3">
+        <!-- rendered by main.js -->
+      </div>
+      <p style="margin-top:1.6rem;">
+        <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr?tab=repositories" target="_blank" rel="noopener">All repositories →</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================== SKILLS -->
+  <section class="section" id="skills">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Toolkit</span>
+        <h2>What I build with.</h2>
+      </div>
+      <div class="grid grid--3">
+        <div class="skill-group reveal">
+          <h3>Languages</h3>
+          <div class="tags">
+            <span class="chip chip--accent">Python</span>
+            <span class="chip chip--accent">C++</span>
+            <span class="chip">SQL</span>
+            <span class="chip">Bash</span>
+          </div>
+        </div>
+        <div class="skill-group reveal" data-d="1">
+          <h3>ML &amp; Deep Learning</h3>
+          <div class="tags">
+            <span class="chip chip--accent">PyTorch</span>
+            <span class="chip chip--accent">TensorFlow</span>
+            <span class="chip">OpenCV</span>
+            <span class="chip">Scikit-Learn</span>
+            <span class="chip">XGBoost</span>
+            <span class="chip">Albumentations</span>
+            <span class="chip">NumPy / Pandas</span>
+            <span class="chip">SciPy</span>
+          </div>
+        </div>
+        <div class="skill-group reveal" data-d="2">
+          <h3>LLMs &amp; RAG</h3>
+          <div class="tags">
+            <span class="chip chip--accent">LangGraph</span>
+            <span class="chip chip--accent">LangChain</span>
+            <span class="chip">HuggingFace Transformers</span>
+            <span class="chip">Vector Search</span>
+            <span class="chip">Cross-Encoder Re-ranking</span>
+            <span class="chip">Embeddings</span>
+          </div>
+        </div>
+        <div class="skill-group reveal">
+          <h3>Inference &amp; Serving</h3>
+          <div class="tags">
+            <span class="chip chip--accent">TensorRT</span>
+            <span class="chip chip--accent">ONNX</span>
+            <span class="chip">INT8 / FP16 Quantization</span>
+            <span class="chip">CUDA</span>
+            <span class="chip">FastAPI</span>
+            <span class="chip">Docker</span>
+          </div>
+        </div>
+        <div class="skill-group reveal" data-d="1">
+          <h3>Domains</h3>
+          <div class="tags">
+            <span class="chip">Computer Vision</span>
+            <span class="chip">Medical Imaging</span>
+            <span class="chip">Super-Resolution</span>
+            <span class="chip">Segmentation</span>
+            <span class="chip">Information Retrieval</span>
+            <span class="chip">Quantitative Finance</span>
+          </div>
+        </div>
+        <div class="skill-group reveal" data-d="2">
+          <h3>Tooling</h3>
+          <div class="tags">
+            <span class="chip">Git</span>
+            <span class="chip">Linux</span>
+            <span class="chip">MongoDB</span>
+            <span class="chip">FAISS</span>
+            <span class="chip">GitHub Actions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== PATENTS + EDU -->
+  <section class="section" id="patents">
+    <div class="container">
+      <div class="grid grid--2" style="align-items:start;">
+        <div>
+          <div class="section-head reveal">
+            <span class="eyebrow">Patents Applied</span>
+            <h2>Inventions on record.</h2>
+          </div>
+          <div class="grid" style="gap:.9rem;">
+            <div class="patent reveal">
+              <div class="patent__id">202541071194</div>
+              <div>
+                <div class="patent__title">AI-Powered X-ray Image Enhancement</div>
+                <div class="patent__desc">Single-image blind super-resolution &amp; denoising.</div>
+              </div>
+            </div>
+            <div class="patent reveal" data-d="1">
+              <div class="patent__id">202441009957</div>
+              <div>
+                <div class="patent__title">Enhancing Body Part from Angiography Loop</div>
+                <div class="patent__desc">Dynamic roadmap generation from DSA sequences.</div>
+              </div>
+            </div>
+            <div class="patent reveal" data-d="2">
+              <div class="patent__id">202541041511</div>
+              <div>
+                <div class="patent__title">Image Enhancement in X-ray Fluoroscopy</div>
+                <div class="patent__desc">Real-time contrast enhancement &amp; denoising.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-head reveal">
+            <span class="eyebrow">Education</span>
+            <h2>Foundations.</h2>
+          </div>
+          <div class="grid" style="gap:.9rem;">
+            <div class="card reveal">
+              <span class="card__tag">2025 — 2027</span>
+              <h3>M.Tech, Artificial Intelligence &amp; Machine Learning</h3>
+              <p>Birla Institute of Technology and Science (BITS), Pilani</p>
+            </div>
+            <div class="card reveal" data-d="1">
+              <span class="card__tag">2019 — 2023</span>
+              <h3>B.Tech, Computer Science &amp; Engineering</h3>
+              <p>Bhilai Institute of Technology, Durg</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================== CONTACT -->
+  <section class="section" id="contact">
+    <div class="container">
+      <div class="contact-card reveal">
+        <span class="eyebrow" style="font-family:var(--font-mono);font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);">Contact</span>
+        <h2 style="margin-top:.6rem;">Let's build something that ships.</h2>
+        <p class="lead" style="max-width:54ch;margin-inline:auto;">
+          I'm open to senior ML / AI Engineer roles and high-impact contract work in computer vision,
+          LLM systems and production inference. If you're shipping real products, I'd love to talk.
+        </p>
+        <a class="email" href="mailto:anubhavagr.mail@gmail.com">anubhavagr.mail@gmail.com</a>
+        <div class="links">
+          <a class="btn btn--primary" href="mailto:anubhavagr.mail@gmail.com">Email me</a>
+          <a class="btn btn--ghost" href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener">LinkedIn</a>
+          <a class="btn btn--ghost" href="https://github.com/anubhavagr" target="_blank" rel="noopener">GitHub</a>
+          <a class="js-resume-link btn btn--ghost" href="assets/anubhav-agrawal-resume.pdf" download>Download résumé</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <!-- ============================================================== FOOTER -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal · Built from scratch, deployed on GitHub Pages.</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+        <a href="mailto:anubhavagr.mail@gmail.com" aria-label="Email">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <!-- Scripts -->
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/main.js"></script>
 </body>
 </html>
