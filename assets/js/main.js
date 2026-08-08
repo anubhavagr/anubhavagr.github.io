@@ -83,23 +83,32 @@
   }
 
   /* --------------------------- Reveal -------------------------------- */
-  const revealEls = $$(".reveal");
-  if (prefersReduced || !("IntersectionObserver" in window)) {
-    revealEls.forEach((el) => el.classList.add("in"));
-  } else {
-    const rio = new IntersectionObserver(
-      (entries, obs) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            e.target.classList.add("in");
-            obs.unobserve(e.target);
-          }
-        });
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }
-    );
-    revealEls.forEach((el) => rio.observe(el));
+  // Reusable: observe any .reveal that hasn't been enrolled yet, so it works
+  // for static markup AND elements injected later by renderWork/renderProjects.
+  let rio = null;
+  function observeReveals() {
+    const els = $$(".reveal:not(.reveal--watched)");
+    if (!els.length) return;
+    if (prefersReduced || !("IntersectionObserver" in window)) {
+      els.forEach((el) => { el.classList.add("in", "reveal--watched"); });
+      return;
+    }
+    if (!rio) {
+      rio = new IntersectionObserver(
+        (entries, obs) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add("in");
+              obs.unobserve(e.target);
+            }
+          });
+        },
+        { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }
+      );
+    }
+    els.forEach((el) => { el.classList.add("reveal--watched"); rio.observe(el); });
   }
+  observeReveals();
 
   /* --------------------- Render work + projects --------------------- */
   function renderWork() {
@@ -131,6 +140,7 @@
   }
   renderWork();
   renderProjects();
+  observeReveals(); // enroll the freshly injected cards
 
   /* ----------------------- Resume manifest --------------------------- */
   const resumeLinks = $$(".js-resume-link");
