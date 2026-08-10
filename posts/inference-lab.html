@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MLX vs llama.cpp on Apple Silicon — a fair LLM-serving benchmark · Anubhav Agrawal</title>
+  <meta name="description" content="A reproducible LLM-serving benchmark on an M4 Pro MacBook Pro — mlx-lm vs llama.cpp, single-stream + concurrency sweep, on Qwen2.5-7B-Instruct at 4-bit. 45–56 tok/s single-stream, flat curve under concurrency." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__mark">AA</span>
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Path</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+        <button id="theme-toggle" class="nav__theme" aria-label="Toggle color theme">
+          <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#work">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All work
+          </a>
+          <span class="card__tag">LLMs · Inference · Benchmark</span>
+          <h1 style="margin-top:.8rem;">MLX vs llama.cpp on Apple Silicon — a fair LLM-serving benchmark</h1>
+          <p class="sub">Both engines serve Qwen2.5-7B-Instruct at 4-bit at <strong>45–56 tok/s</strong> on an M4 Pro. The interesting story is what happens at concurrency 2+. Reproducible, with charts and methodology.</p>
+
+          <div class="article__meta">
+            <div><b>Hardware</b><span>MacBook Pro M4 Pro</span></div>
+            <div><b>Model</b><span>Qwen2.5-7B-Instruct · 4-bit</span></div>
+            <div><b>Engines</b><span>mlx-lm · llama.cpp</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/inference-lab" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/inference-lab</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              On an M4 Pro MacBook Pro, both <code>mlx-lm</code> and <code>llama.cpp</code> serve
+              Qwen2.5-7B-Instruct at 4-bit at <strong>45–56 tokens per second</strong> single-stream.
+              Fast enough for real interactive use. But the moment a second request arrives
+              concurrently, throughput flatlines. Neither engine can parallelize a single model
+              instance on Apple Silicon — and that's the actually interesting story.
+            </p>
+          </div>
+
+          <h2>The question</h2>
+          <p>
+            I do ML engineering on a MacBook Pro M4 for everything except heavy training. With the
+            recent wave of high-quality 7B-class open LLMs (Qwen2.5, Qwen3, Llama 3.1), I wanted a
+            real answer to a question that comes up in every "should we self-host?" conversation:
+          </p>
+          <blockquote>Can a modern MacBook Pro usefully serve a 7B LLM, and at what concurrency does it stop being useful?</blockquote>
+          <p>
+            "Usefully" means: fast enough that an interactive chat client doesn't feel laggy, and
+            stable enough under load that you could actually put it behind an API.
+          </p>
+          <p>There are two engines that matter on Apple Silicon today:</p>
+          <ul>
+            <li><strong><code>mlx-lm</code></strong> — Apple's own framework, built for unified memory on M-series chips.</li>
+            <li><strong><code>llama.cpp</code></strong> — the cross-platform baseline, with a mature Metal backend.</li>
+          </ul>
+          <p>
+            Most existing benchmarks compare them on different hardware, with different models, at
+            different quantization levels, or using synthetic workloads. I wanted the same model,
+            same prompts, same hardware, same workload contract — a fair fight.
+          </p>
+
+          <h2>The setup</h2>
+          <ul>
+            <li><strong>Hardware:</strong> MacBook Pro, M4 Pro, macOS</li>
+            <li><strong>Model:</strong> Qwen2.5-7B-Instruct, 4-bit quantization
+              <ul>
+                <li>mlx format: <code>mlx-community/Qwen2.5-7B-Instruct-4bit</code></li>
+                <li>GGUF format: <code>bartowski/Qwen2.5-7B-Instruct-GGUF</code> (Q4_K_M)</li>
+              </ul>
+            </li>
+            <li><strong>Workload:</strong> 12 prompts of varying length (5 short, 5 medium, 2 long), greedy decode (<code>temperature=0</code>), <code>max_tokens=256</code>, no system prompt.</li>
+            <li><strong>Measurement:</strong> 3 warmup requests, then 20 measured (single-stream) or 16 measured per concurrency level (sweep). p50 reported as headline; p99 captured but not over-interpreted on n=20.</li>
+          </ul>
+          <p>Full fairness contract in the repo: <a href="https://github.com/anubhavagr/inference-lab/blob/main/docs/methodology.md" target="_blank" rel="noopener"><code>docs/methodology.md</code></a>.</p>
+
+          <h2>Single-stream — the headline numbers</h2>
+          <figure class="figure">
+            <img src="../assets/img/posts/inference-lab/single_stream.png" alt="Bar chart comparing mlx-lm and llama.cpp on TTFT, TPOT, throughput, and peak RSS for Qwen2.5-7B-4bit on M4 Pro" />
+            <figcaption>Single-stream, Qwen2.5-7B-Instruct @ 4-bit on M4 Pro.</figcaption>
+          </figure>
+          <table>
+            <thead><tr><th>Engine</th><th>TTFT p50</th><th>TPOT p50</th><th>tok/s</th><th>RSS GB</th></tr></thead>
+            <tbody>
+              <tr><td>mlx-lm</td><td>228 ms</td><td>26.1 ms</td><td>37.1</td><td>4.42</td></tr>
+              <tr><td>llama.cpp</td><td><strong>100 ms</strong></td><td><strong>21.7 ms</strong></td><td><strong>45.3</strong></td><td>4.76</td></tr>
+            </tbody>
+          </table>
+          <p>
+            At first glance this looks like a llama.cpp win. But the mlx-lm throughput number is
+            misleading: those numbers were captured on cold Metal kernels. After warmup (which the
+            concurrency sweep does naturally), mlx-lm settles at <strong>~56 tok/s</strong>. The
+            warmer numbers are the more honest baseline.
+          </p>
+          <p>
+            Even with that correction, <strong>llama.cpp wins on TTFT by a wide margin — 100 ms vs
+            228 ms.</strong> For interactive chat, that's the difference between "the model started
+            typing instantly" and "the model took a noticeable beat to start."
+          </p>
+
+          <h2>The concurrency surprise</h2>
+          <p>
+            Here's where it gets interesting. I ran the same workload at offered concurrency of 1,
+            4, 8, 16, and 32 — firing N requests in parallel via Python's <code>ThreadPoolExecutor</code>
+            and measuring aggregate throughput.
+          </p>
+          <figure class="figure">
+            <img src="../assets/img/posts/inference-lab/sweep_throughput.png" alt="Line chart showing aggregate tok/s staying flat across concurrency 1 to 32 for both engines" />
+            <figcaption>Aggregate throughput vs concurrency — flat for both engines.</figcaption>
+          </figure>
+          <p>
+            The line is flat. For both engines. Going from one user to thirty-two concurrent users,
+            aggregate throughput stays within ±4%. You're not getting any more tokens out of the
+            device by offering it more work. It's saturated at one user.
+          </p>
+          <p>
+            Why? Because <strong>a single LLM model instance is one piece of state, and you can't
+            safely touch it from two threads.</strong> Both <code>mlx-lm</code> and
+            <code>llama.cpp</code> crash if you try — segfault in llama.cpp, trace trap (Metal
+            dispatch corruption) in mlx. The fix is a per-instance lock, and once you add it,
+            requests serialize through the lock. Throughput is constant; queue depth grows; latency
+            degrades linearly with concurrency.
+          </p>
+          <figure class="figure">
+            <img src="../assets/img/posts/inference-lab/sweep_ttft.png" alt="Line chart showing TTFT p50 staying flat across concurrency 1 to 32 for both engines" />
+            <figcaption>TTFT vs concurrency — also flat at these levels.</figcaption>
+          </figure>
+          <p>
+            Notice the TTFT lines also stay roughly flat. That's a clue about what's <em>not</em>
+            happening: the requests aren't really queueing visibly at these levels, because the
+            ThreadPoolExecutor with 16–32 workers absorbs the parallelism at the Python layer. The
+            queue forms <em>inside</em> the lock, but each request still completes in ~5 seconds, so
+            by the time the next one acquires the lock, the previous has finished. With longer
+            requests or higher concurrency, you'd see TTFT climb linearly.
+          </p>
+          <p>
+            This isn't a bug in either engine. It's a fundamental property: <strong>single-instance
+            serving on a single device cannot parallelize.</strong>
+          </p>
+          <p>
+            The standard answer to this in production LLM serving is <strong>continuous batching</strong>
+            — a technique where the engine itself manages a request queue and <em>batches tokens
+            from different requests into a single forward pass</em>, so multiple users share the
+            compute. This is what <code>vLLM</code>, <code>SGLang</code>, <code>TensorRT-LLM</code>,
+            and <code>TGI</code> all do. None of them run on Apple Silicon today.
+          </p>
+          <p>So on a MacBook Pro, you cannot beat single-stream throughput by adding concurrency unless you either:</p>
+          <ul>
+            <li>Run K separate model instances (K × ~5 GB RAM, K × the device).</li>
+            <li>Wait for someone to ship continuous batching for Metal.</li>
+          </ul>
+          <p>
+            For a laptop with 32–48 GB unified memory, option (1) caps out around K=4–6 instances.
+            That's the real ceiling.
+          </p>
+
+          <h2>mlx-lm vs llama.cpp — what they optimize</h2>
+          <p>The most useful finding from this exercise isn't "which is faster." It's that <strong>they optimize different things.</strong></p>
+          <table>
+            <thead><tr><th></th><th>mlx-lm</th><th>llama.cpp</th></tr></thead>
+            <tbody>
+              <tr><td>TTFT (first-token latency)</td><td>228 ms</td><td><strong>100 ms</strong></td></tr>
+              <tr><td>Decode throughput</td><td><strong>56 t/s</strong></td><td>45 t/s</td></tr>
+              <tr><td>Memory</td><td><strong>4.4 GB</strong></td><td>4.8 GB</td></tr>
+              <tr><td>Stable under concurrency without lock</td><td>crashes at conc≥8</td><td>segfaults immediately</td></tr>
+            </tbody>
+          </table>
+          <ul>
+            <li><strong>mlx-lm wins decode throughput by ~24%.</strong> Once the first token is out, mlx-lm produces subsequent tokens faster. Better for long-form generation, document summarization, batch workloads where TTFT is amortized.</li>
+            <li><strong>llama.cpp wins TTFT by ~56%.</strong> First token arrives in less than half the time. Better for interactive chat where users feel the latency of the first character appearing.</li>
+            <li><strong>mlx-lm is slightly more memory-frugal</strong> (4.4 vs 4.8 GB), which matters when you're fitting multiple instances into unified memory.</li>
+          </ul>
+          <p>
+            If you're building a coding assistant or a RAG pipeline where one request = many tokens
+            of output, pick mlx-lm. If you're building a chat interface where users click "send"
+            and wait, pick llama.cpp.
+          </p>
+
+          <h2>What this means in practice</h2>
+          <p>Three takeaways for anyone considering local LLM serving on Apple Silicon:</p>
+          <ol>
+            <li>
+              <strong>For single-user workloads, an M4 Pro is genuinely competitive with cloud APIs.</strong>
+              45–56 tok/s on a 7B model is in the same ballpark as GPT-3.5-class APIs, with zero
+              per-token cost, zero network latency, and full data privacy. If your workload fits
+              one user at a time, your laptop is enough.
+            </li>
+            <li>
+              <strong>For multi-user serving, you need different infrastructure.</strong>
+              A single MacBook Pro cannot serve multiple concurrent users faster than it serves one.
+              If you need to handle a team of 10 engineers hitting the same model, you either need
+              a small fleet of Macs (expensive fast) or a cloud GPU with a continuous-batching engine.
+            </li>
+            <li>
+              <strong>Engine choice depends on workload shape, not "which is faster."</strong>
+              mlx-lm and llama.cpp are not interchangeable — they make different tradeoffs. Pick
+              based on whether your workload cares about TTFT or decode rate more.
+            </li>
+          </ol>
+
+          <h2>What's next</h2>
+          <p>
+            This is Phase 1 of a larger project: a reproducible LLM-serving benchmark across both
+            Apple Silicon and cloud GPU, with the cross-platform chart that tells you <em>exactly
+            when local stops being cheaper than cloud</em>.
+          </p>
+          <p>
+            Phase 2 rents a cloud H100 for a day and runs the same workload against vLLM and
+            TensorRT-LLM with continuous batching. The hypothesis: at conc=32, an H100 should do
+            ~10× the aggregate throughput of the M4 Pro. The interesting number is the
+            <strong>cost-per-token crossover</strong> — at what concurrency does cloud GPU become
+            cheaper than buying another MacBook?
+          </p>
+
+          <h2>Reproduce</h2>
+          <pre><code>git clone https://github.com/anubhavagr/inference-lab
+cd inference-lab
+uv venv &amp;&amp; source .venv/bin/activate
+uv pip install mlx-lm llama-cpp-python matplotlib rich
+
+hf download mlx-community/Qwen2.5-7B-Instruct-4bit --local-dir models/qwen25-7b-mlx-4bit
+hf download bartowski/Qwen2.5-7B-Instruct-GGUF --include "*Q4_K_M*" --local-dir models/qwen25-7b-gguf-q4k
+
+python bench.py mlx   models/qwen25-7b-mlx-4bit
+python bench.py llama models/qwen25-7b-gguf-q4k/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+python bench.py sweep mlx   models/qwen25-7b-mlx-4bit
+python bench.py sweep llama models/qwen25-7b-gguf-q4k/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+python -m bench.plots</code></pre>
+          <p>
+            Numbers will vary ±5–10% based on macOS version, thermal state, and background tasks.
+            That's the reality of benchmarking on a laptop, not a benchmarking rig.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="https://github.com/anubhavagr/inference-lab" target="_blank" rel="noopener">Repo on GitHub →</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#work">More selected work</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#contact">Get in touch</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>
