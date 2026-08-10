@@ -35,6 +35,20 @@ window.SITE_DATA = {
         { v: "500+", l: "users" }
       ],
       chips: ["LangGraph", "RAG", "MongoDB", "Cross-Encoder", "Eval Harness"]
+    },
+    {
+      title: "Inference Lab — MLX vs llama.cpp on Apple Silicon",
+      href: "posts/inference-lab.html",
+      tag: "LLM Serving · Benchmarking",
+      blurb:
+        "A reproducible LLM-serving benchmark for the M4 Pro — mlx-lm and llama.cpp on the same Qwen2.5-7B-Instruct model, same prompts, same fairness contract. The honest answer to when local stops being cheaper than cloud.",
+      kpis: [
+        { v: "56", l: "tok/s mlx" },
+        { v: "45", l: "tok/s llama" },
+        { v: "100 ms", l: "TTFT llama" },
+        { v: "±4%", l: "conc flat" }
+      ],
+      chips: ["mlx-lm", "llama.cpp", "Metal", "Benchmarking"]
     }
   ],
 
