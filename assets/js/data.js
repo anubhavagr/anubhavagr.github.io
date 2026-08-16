@@ -37,18 +37,32 @@ window.SITE_DATA = {
       chips: ["LangGraph", "RAG", "MongoDB", "Cross-Encoder", "Eval Harness"]
     },
     {
-      title: "Inference Lab — MLX vs llama.cpp on Apple Silicon",
+      title: "Inference Lab I — the Flat Line Under Mac LLM Serving",
       href: "posts/inference-lab.html",
       tag: "LLM Serving · Benchmarking",
       blurb:
-        "A reproducible LLM-serving benchmark for the M4 Pro — mlx-lm and llama.cpp on the same Qwen2.5-7B-Instruct model, same prompts, same fairness contract. The honest answer to when local stops being cheaper than cloud.",
+        "mlx-lm vs llama.cpp on one M4 Pro — same Qwen2.5-7B model, same prompts, same fairness contract. 45–56 tok/s single-stream, then a throughput curve that stays flat from one user to thirty-two. Crash forensics find the lock; the fix everyone suggests becomes Part 2.",
       kpis: [
         { v: "56", l: "tok/s mlx" },
         { v: "45", l: "tok/s llama" },
         { v: "100 ms", l: "TTFT llama" },
-        { v: "±4%", l: "conc flat" }
+        { v: "±4%", l: "conc 1→32" }
       ],
       chips: ["mlx-lm", "llama.cpp", "Metal", "Benchmarking"]
+    },
+    {
+      title: "Inference Lab II — Three Times the Memory Bought Nine Percent",
+      href: "posts/inference-lab-2.html",
+      tag: "LLM Serving · Benchmarking",
+      blurb:
+        "The follow-up everyone asked for: K process-isolated model instances behind one queue, measured honestly at K=1,2,3. Three times the RAM buys +9% throughput — because one instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bus. The arithmetic, the proof, and why only continuous batching gets past it.",
+      kpis: [
+        { v: "+9%", l: "for 3× RAM" },
+        { v: "246/273", l: "GB/s at K=1" },
+        { v: "2.8×", l: "TPOT at K=3" },
+        { v: "≈12×", l: "H100 predicted" }
+      ],
+      chips: ["multiprocessing", "Metal", "vLLM", "Roofline"]
     }
   ],
 
