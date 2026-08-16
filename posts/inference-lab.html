@@ -147,7 +147,7 @@
             project: <strong>llama.cpp wins time-to-first-token by more than 2×</strong> — 100 ms
             vs 228 ms — while <strong>mlx-lm wins decode throughput by ~24%</strong> once it’s warm.
             For a chat interface, where the user feels the first character appear, that’s
-            llama.cpp. For long-form generation, RAG, anything where one request means many output
+            llama.cpp. For long-form generation, RAG, anything where 1 request means many output
             tokens and TTFT amortizes, that’s mlx-lm. Neither engine is “faster.” They optimize
             different things.
           </p>
@@ -169,7 +169,7 @@
           </p>
           <p>
             The reason turned out to live in the crash reports. <strong>A single LLM model instance
-            is one piece of state, and you cannot safely touch it from two threads.</strong> Try it
+            is 1 piece of state, and you cannot safely touch it from 2 threads.</strong> Try it
             and both engines die: llama.cpp segfaults; mlx-lm goes down with a Metal trace trap —
             dispatch queue corruption. The fix, in both wrappers, is a per-instance lock. And the
             moment you add that lock, every request serializes through it. Throughput is constant.
@@ -203,13 +203,13 @@
             wait for someone to ship continuous batching for Metal.
           </p>
           <p>
-            Every thread about Mac LLM serving eventually arrives at option one. <em>“Just run
+            Every thread about Mac LLM serving eventually arrives at option 1. <em>“Just run
             multiple instances.”</em> It was my own working theory too — the obvious way a fleet of
             Macs could add up to real serving capacity. A 24 GB machine should fit 4 or 5
             instances; a 48 GB machine, more.
           </p>
           <p>
-            So I built it. A dispatcher that runs K process-isolated engine instances draining one
+            So I built it. A dispatcher that runs K process-isolated engine instances draining 1
             shared request queue, plus the benchmark harness to measure it honestly — process
             isolation, per-instance warmup, queue-inclusive latency, the works. If instances scaled,
             the flat line above becomes a staircase, and “self-host on Macs” becomes an actual
@@ -233,7 +233,7 @@
               user at a time, your laptop is enough.
             </li>
             <li>
-              <strong>For multi-user serving, one MacBook cannot beat one user.</strong>
+              <strong>For multi-user serving, 1 MacBook cannot beat 1 user.</strong>
               My first answer here was “a small fleet of Macs, or a cloud GPU.” Part 2 puts that
               first option on the bench and measures it. It doesn’t survive.
             </li>

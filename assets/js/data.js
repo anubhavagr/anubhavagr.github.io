@@ -45,14 +45,14 @@ window.SITE_DATA = {
       href: "posts/inference-lab.html",
       tag: "Part 1",
       date: "Aug 2026",
-      dek: "mlx-lm vs llama.cpp under one fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
+      dek: "mlx-lm vs llama.cpp under 1 fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
     },
     {
       title: "3× the memory bought me 9%.",
       href: "posts/inference-lab-2.html",
       tag: "Part 2",
       date: "Aug 2026",
-      dek: "K process-isolated instances behind one queue: +9% for 3× the RAM. The arithmetic says why — one instance already saturates the M4 Pro's memory bus."
+      dek: "K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus."
     }
   ],
 
@@ -79,10 +79,10 @@ window.SITE_DATA = {
       chips: ["PyTorch", "Gatys 2015", "VGG", "Gram loss"]
     },
     {
-      title: "Stitching N photos into one wide view",
+      title: "Stitching N photos into 1 wide view",
       repo: "Panorama-image-stitching",
       hook:
-        "Feature matching → homography → warping → blending, end to end on OpenCV. Three overlapping frames fused into one 3815-px panorama.",
+        "Feature matching → homography → warping → blending, end to end on OpenCV. 3 overlapping frames fused into a 3815-px panorama.",
       img: "assets/img/projects/panorama.png",
       alt: "Wide panorama stitched from three overlapping photographs",
       href: "https://github.com/anubhavagr/Panorama-image-stitching",
@@ -119,7 +119,7 @@ window.SITE_DATA = {
     {
       name: "pytorch-cpp-tensorrt",
       desc:
-        "PyTorch → ONNX → TensorRT → C++ walkthrough, one notebook per stage. The pattern I use in production.",
+        "PyTorch → ONNX → TensorRT → C++ walkthrough, 1 notebook per stage. The pattern I use in production.",
       href: "https://github.com/anubhavagr/pytorch-cpp-tensorrt",
       note: "5-stage pipeline",
       chips: ["TensorRT", "ONNX", "C++", "Deployment"]
