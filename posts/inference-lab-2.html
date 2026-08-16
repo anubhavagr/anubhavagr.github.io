@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Three times the memory bought me nine percent — Part 2 · Anubhav Agrawal</title>
-  <meta name="description" content="Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind one queue — and measured it at K=1,2,3 on an M4 Pro. Three times the RAM bought +9% throughput. The arithmetic says why: one instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along." />
+  <title>3× the memory bought me 9% — Part 2 · Anubhav Agrawal</title>
+  <meta name="description" content="Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind one queue — and measured it at K=1,2,3 on an M4 Pro. 3× the RAM bought +9% throughput. The arithmetic says why: one instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along." />
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -39,7 +39,7 @@
             All work
           </a>
           <span class="card__tag">LLMs · Inference · Part 2 of 2</span>
-          <h1 style="margin-top:.8rem;">Three times the memory bought me nine percent.</h1>
+          <h1 style="margin-top:.8rem;">3× the memory bought me 9%.</h1>
           <p class="sub">I built the fix everyone suggests for the flat line in <a href="inference-lab.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1</a> — K process-isolated LLM instances behind one queue — and measured it at K = 1, 2, 3. The real ceiling on Apple Silicon isn’t the lock. It’s the memory bus, and the arithmetic proves it.</p>
 
           <div class="article__meta">
@@ -55,7 +55,7 @@
             <div class="h">TL;DR</div>
             <p style="margin:0;">
               K process-isolated instances of a 4-bit 7B model, K = 1 → 3 on 24 GB of unified
-              memory: aggregate throughput gains cap at <strong>+9% for three times the RAM</strong>,
+              memory: aggregate throughput gains cap at <strong>+9% for 3× the RAM</strong>,
               while every stream’s decode rate degrades almost linearly. The arithmetic says why —
               one instance already streams <strong>~250 GB/s of the M4 Pro’s ~273 GB/s</strong>
               unified-memory bandwidth. The bus was the ceiling all along, only continuous batching
@@ -66,15 +66,15 @@
           <h2>The number I didn’t believe</h2>
           <p>
             When the K=3 run finished, I did what you do with a result you don’t believe: I ran it
-            again. And then a third time. Same number. Three process-isolated instances of the
-            model — three times the memory, three times what everyone calls “capacity” — delivered
-            <strong>nine percent</strong> more tokens per second than one instance.
+            again. And again. Same number. 3 process-isolated instances of the
+            model — 3× the memory, 3× what everyone calls “capacity” — delivered
+            <strong>9%</strong> more tokens per second than one instance.
           </p>
           <p>
             This post is the follow-up to
             <a href="inference-lab.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1</a>,
             where a single model instance serialized every request through a lock and throughput
-            stayed flat from one user to thirty-two. The fix every discussion thread suggests is to
+            stayed flat from 1 user to 32. The fix every discussion thread suggests is to
             stop serving from one instance: <em>just run K of them</em>. So I built exactly that —
             a dispatcher running K engine instances in K isolated processes, draining one shared
             request queue — and measured it properly.
@@ -126,7 +126,7 @@
             </tbody>
           </table>
           <p>
-            Three times the memory buys single-digit throughput. And the TPOT column is the tell:
+            3× the memory buys single-digit throughput. And the TPOT column is the tell:
             each individual stream’s decode rate degrades almost perfectly linearly with K. The
             instances aren’t adding capacity — <strong>they’re dividing the same saturated
             resource among more users.</strong>
@@ -139,7 +139,7 @@
 
           <h3>Step 1 — how many bytes does one token cost?</h3>
           <p>
-            Qwen2.5-7B has ~7.07 billion parameters. At 4-bit quantization that’s half a byte
+            Qwen2.5-7B has ~7.07 billion parameters. At 4-bit quantization that’s 0.5 bytes
             each for the bulk of them:
           </p>
           <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
@@ -170,7 +170,7 @@
           </p>
           <p>
             The M4 Pro’s GPU offers roughly 17 TFLOPS against 273 GB/s of bandwidth — a machine
-            balance of ~62 FLOP per byte. Decode needs 3.2. The workload wants nineteen times less
+            balance of ~62 FLOP per byte. Decode needs 3.2. The workload wants 19× less
             compute per byte than the chip can balance: <strong>decode is memory-bound by an order
             of magnitude</strong>, on any hardware, not just this one. Faster kernels can’t fix a
             bound like this; only moving fewer bytes per token can.
@@ -271,7 +271,7 @@
             <code>vLLM</code>, <code>SGLang</code>, <code>TensorRT-LLM</code>, and <code>TGI</code>
             exist, and why “just run K instances” is not a substitute for any of them. None of the
             continuous-batching engines run on Apple Silicon today. So on a MacBook Pro your real
-            options are exactly three:
+            options are exactly 3:
           </p>
           <ol>
             <li>One instance, serialized — measured here, at its ceiling.</li>
