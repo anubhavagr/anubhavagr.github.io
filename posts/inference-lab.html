@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A MacBook Pro can serve an LLM. Then the second user arrives — Part 1 · Anubhav Agrawal</title>
-  <meta name="description" content="Part 1: mlx-lm vs llama.cpp on the same Qwen2.5-7B-Instruct model, same prompts, same fairness contract on an M4 Pro. 45–56 tok/s single-stream — and a throughput curve that stays flat from one user to thirty-two." />
+  <meta name="description" content="Part 1: mlx-lm vs llama.cpp on the same Qwen2.5-7B-Instruct model, same prompts, same fairness contract on an M4 Pro. 45–56 tok/s single-stream — and a throughput curve that stays flat from 1 user to 32." />
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -76,7 +76,7 @@
           <p>
             Instead, at every concurrency I tested — 1, 4, 8, 16, 32 — aggregate throughput moves
             less than <strong>±4%</strong>. Not rises-then-plateaus. Flat from the first user. Offer
-            the machine thirty-two times the work and it returns exactly as many tokens as it did
+            the machine 32× the work and it returns exactly as many tokens as it did
             for one.
           </p>
           <p>
@@ -97,7 +97,7 @@
             “Usefully” means fast enough that an interactive client doesn’t feel laggy, and stable
             enough under load that you could put it behind an API without holding your breath.
           </p>
-          <p>Two engines matter on Apple Silicon today:</p>
+          <p>2 engines matter on Apple Silicon today:</p>
           <ul>
             <li><strong><code>mlx-lm</code></strong> — Apple’s own framework, built for unified memory on M-series chips.</li>
             <li><strong><code>llama.cpp</code></strong> — the cross-platform baseline, with a mature Metal backend.</li>
@@ -163,7 +163,7 @@
             <figcaption>Aggregate throughput vs concurrency. Flat, for both engines, all the way to 32.</figcaption>
           </figure>
           <p>
-            Flat. For both engines. One user or thirty-two, the device produces the same number of
+            Flat. For both engines. 1 user or 32, the device produces the same number of
             tokens per second. Whatever concurrency means on this machine, it doesn’t mean more
             throughput.
           </p>
@@ -205,7 +205,7 @@
           <p>
             Every thread about Mac LLM serving eventually arrives at option one. <em>“Just run
             multiple instances.”</em> It was my own working theory too — the obvious way a fleet of
-            Macs could add up to real serving capacity. A 24 GB machine should fit four or five
+            Macs could add up to real serving capacity. A 24 GB machine should fit 4 or 5
             instances; a 48 GB machine, more.
           </p>
           <p>
@@ -216,11 +216,11 @@
             architecture.
           </p>
           <p>
-            <strong>Part 2 is what it measured. The one-line version: three times the memory bought
-            me nine percent — and the reason is arithmetic, not software.</strong>
+            <strong>Part 2 is what it measured. The one-line version: 3× the memory bought
+            me 9% — and the reason is arithmetic, not software.</strong>
           </p>
           <p style="margin:2rem 0; padding:1.25rem 1.5rem; border-left:3px solid var(--accent); background:color-mix(in srgb, var(--accent) 6%, transparent);">
-            <a href="inference-lab-2.html" style="color:var(--accent); font-weight:600;">Continue to Part 2 — Three times the memory bought me nine percent →</a><br />
+            <a href="inference-lab-2.html" style="color:var(--accent); font-weight:600;">Continue to Part 2 — 3× the memory bought me 9% →</a><br />
             <span style="opacity:.75;">The dispatcher benchmark, the memory-bus arithmetic, and why continuous batching is the only real fix.</span>
           </p>
 

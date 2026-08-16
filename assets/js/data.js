@@ -45,10 +45,10 @@ window.SITE_DATA = {
       href: "posts/inference-lab.html",
       tag: "Part 1",
       date: "Aug 2026",
-      dek: "mlx-lm vs llama.cpp under one fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from one user to thirty-two. Crash forensics find the lock."
+      dek: "mlx-lm vs llama.cpp under one fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
     },
     {
-      title: "Three times the memory bought me nine percent.",
+      title: "3× the memory bought me 9%.",
       href: "posts/inference-lab-2.html",
       tag: "Part 2",
       date: "Aug 2026",
