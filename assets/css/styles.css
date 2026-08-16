@@ -296,6 +296,41 @@ code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
 .proj-card__note { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-mute); white-space: nowrap; }
 .proj-card p { font-size: 0.84rem; color: var(--text-soft); margin-top: 0.35rem; line-height: 1.55; }
 
+/* ----------------------------------------------------------------- Posts */
+.post-row {
+  display: grid; grid-template-columns: 118px 1fr; gap: 1.6rem;
+  align-items: start; padding: 1.55rem 0.25rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+.post-row:first-child { padding-top: 0.35rem; }
+.post-row:last-child { border-bottom: 0; padding-bottom: 0.4rem; }
+.post-row__left { display: flex; flex-direction: column; align-items: flex-start; gap: 0.45rem; padding-top: 0.3rem; }
+.post-row__part {
+  font-family: var(--font-mono); font-size: 0.66rem; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  border-radius: 999px; padding: 0.16rem 0.6rem;
+}
+.post-row__date { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-mute); }
+.post-row__body h3 {
+  font-family: var(--font-serif); font-weight: 500; font-size: 1.18rem;
+  line-height: 1.32; letter-spacing: -0.01em;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+  transition: color 0.2s var(--ease);
+}
+.post-row__arrow {
+  font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent);
+  opacity: 0; transform: translateX(-4px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.post-row__body p { font-size: 0.9rem; color: var(--text-soft); margin-top: 0.45rem; line-height: 1.62; max-width: 62ch; }
+.post-row:hover h3 { color: var(--accent); }
+.post-row:hover .post-row__arrow { opacity: 1; transform: translateX(0); }
+@media (max-width: 640px) {
+  .post-row { grid-template-columns: 1fr; gap: 0.55rem; padding: 1.3rem 0.15rem; }
+  .post-row__left { flex-direction: row; align-items: center; padding-top: 0; }
+}
+
 /* ----------------------------------------------------------------- Timeline */
 .timeline { position: relative; padding-left: 1.4rem; }
 .timeline::before {

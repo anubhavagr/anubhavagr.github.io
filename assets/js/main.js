@@ -97,6 +97,21 @@
         <span class="case-card__arrow">read case study →</span>
       </a>`).join("");
   }
+  function renderPosts() {
+    const host = $("#posts-grid");
+    if (!host || !window.SITE_DATA) return;
+    host.innerHTML = window.SITE_DATA.posts.map((p) => `
+      <a class="post-row reveal" href="${p.href}">
+        <div class="post-row__left">
+          <span class="post-row__part">${p.tag}</span>
+          <span class="post-row__date">${p.date}</span>
+        </div>
+        <div class="post-row__body">
+          <h3>${p.title}<span class="post-row__arrow">→</span></h3>
+          <p>${p.dek}</p>
+        </div>
+      </a>`).join("");
+  }
   function renderLab() {
     const host = $("#lab-grid");
     if (!host || !window.SITE_DATA) return;
@@ -128,6 +143,7 @@
       </a>`).join("");
   }
   renderWork();
+  renderPosts();
   renderLab();
   renderProjects();
   observeReveals(); // enroll the freshly injected cards
