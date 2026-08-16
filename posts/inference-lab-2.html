@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three times the memory bought me nine percent — Part 2 · Anubhav Agrawal</title>
+  <meta name="description" content="Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind one queue — and measured it at K=1,2,3 on an M4 Pro. Three times the RAM bought +9% throughput. The arithmetic says why: one instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#work">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All work
+          </a>
+          <span class="card__tag">LLMs · Inference · Part 2 of 2</span>
+          <h1 style="margin-top:.8rem;">Three times the memory bought me nine percent.</h1>
+          <p class="sub">I built the fix everyone suggests for the flat line in <a href="inference-lab.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1</a> — K process-isolated LLM instances behind one queue — and measured it at K = 1, 2, 3. The real ceiling on Apple Silicon isn’t the lock. It’s the memory bus, and the arithmetic proves it.</p>
+
+          <div class="article__meta">
+            <div><b>Hardware</b><span>MacBook Pro M4 Pro</span></div>
+            <div><b>Model</b><span>Qwen2.5-7B-Instruct · 4-bit</span></div>
+            <div><b>Isolation</b><span>one process per instance</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/inference-lab" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/inference-lab</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              K process-isolated instances of a 4-bit 7B model, K = 1 → 3 on 24 GB of unified
+              memory: aggregate throughput gains cap at <strong>+9% for three times the RAM</strong>,
+              while every stream’s decode rate degrades almost linearly. The arithmetic says why —
+              one instance already streams <strong>~250 GB/s of the M4 Pro’s ~273 GB/s</strong>
+              unified-memory bandwidth. The bus was the ceiling all along, only continuous batching
+              gets past it, and nothing ships continuous batching for Metal.
+            </p>
+          </div>
+
+          <h2>The number I didn’t believe</h2>
+          <p>
+            When the K=3 run finished, I did what you do with a result you don’t believe: I ran it
+            again. And then a third time. Same number. Three process-isolated instances of the
+            model — three times the memory, three times what everyone calls “capacity” — delivered
+            <strong>nine percent</strong> more tokens per second than one instance.
+          </p>
+          <p>
+            This post is the follow-up to
+            <a href="inference-lab.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1</a>,
+            where a single model instance serialized every request through a lock and throughput
+            stayed flat from one user to thirty-two. The fix every discussion thread suggests is to
+            stop serving from one instance: <em>just run K of them</em>. So I built exactly that —
+            a dispatcher running K engine instances in K isolated processes, draining one shared
+            request queue — and measured it properly.
+          </p>
+          <p>
+            I’ll be honest about my prior going in. I’d done the back-of-envelope math and
+            suspected the win would be modest. But an estimate is not a measurement, and this
+            particular number decides something real: whether “buy more Macs” is a scaling
+            strategy or a waste of money. The measurement says waste. Here’s the arithmetic
+            behind it, step by step.
+          </p>
+
+          <h2>Building the honest version</h2>
+          <p>
+            The lazy implementation of “run K instances” is threads. It’s also wrong, twice over:
+            the per-instance lock from Part 1 still serializes everything, and Python’s GIL
+            throttles decode on top of it. Threads would understate the machine — you’d be
+            measuring Python, not the hardware.
+          </p>
+          <p>
+            So <code>bench.py dispatch</code> runs each instance as its own process
+            (<code>spawn</code> context — <code>fork</code> and Metal do not get along), each with
+            its own warmup, because Metal kernel compilation is lazy and per-process: skip the
+            warmup and you’re benchmarking the compiler. All K processes drain one shared request
+            queue under the same workload contract as Part 1 — same 12 prompts, greedy decode,
+            <code>max_tokens=256</code>. Two details worth calling out:
+          </p>
+          <ul>
+            <li><strong>Queue-inclusive TTFT.</strong> Measured from submit to first token, across process boundaries — the latency a client actually feels, not the engine’s private view.</li>
+            <li><strong>Worker RSS sum.</strong> The true RAM cost of K instances, summed per worker — the number a capacity plan needs.</li>
+          </ul>
+          <p>
+            Full additions to the fairness contract are in
+            <a href="https://github.com/anubhavagr/inference-lab/blob/main/docs/methodology.md" target="_blank" rel="noopener"><code>docs/methodology.md</code></a>.
+            K is capped at 3 by the 24 GB of unified memory — a fourth ~4.5 GB instance risks swap,
+            and swap makes every number in this post garbage.
+          </p>
+
+          <h2>The result</h2>
+          <figure class="figure">
+            <img src="../assets/img/posts/inference-lab/dispatch_scaling.png" alt="Line chart showing aggregate tok/s versus instance count K for both engines, with dashed ideal linear scaling reference lines; actual scaling is nearly flat" />
+            <figcaption>Aggregate throughput vs instance count. The dashed lines are ideal linear scaling from K=1. The gap between dashed and solid is the memory-bandwidth wall.</figcaption>
+          </figure>
+          <table>
+            <thead><tr><th>Engine</th><th>agg tok/s @ K=1</th><th>@ K=2</th><th>@ K=3</th><th>TPOT per stream</th></tr></thead>
+            <tbody>
+              <tr><td>mlx-lm</td><td>55.6</td><td>60.2 (+8%)</td><td>60.7 (+9%)</td><td>17 → 32 → 48 ms</td></tr>
+              <tr><td>llama.cpp</td><td>45.3</td><td>47.8 (+6%)</td><td>49.3 (+9%)</td><td>22 → 41 → 60 ms</td></tr>
+            </tbody>
+          </table>
+          <p>
+            Three times the memory buys single-digit throughput. And the TPOT column is the tell:
+            each individual stream’s decode rate degrades almost perfectly linearly with K. The
+            instances aren’t adding capacity — <strong>they’re dividing the same saturated
+            resource among more users.</strong>
+          </p>
+          <p>
+            Dividing <em>what</em> resource? That’s the question the rest of this post answers.
+          </p>
+
+          <h2>The arithmetic</h2>
+
+          <h3>Step 1 — how many bytes does one token cost?</h3>
+          <p>
+            Qwen2.5-7B has ~7.07 billion parameters. At 4-bit quantization that’s half a byte
+            each for the bulk of them:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            7.07 × 10⁹ params × 0.5 B/param &nbsp;≈&nbsp; 3.5 GB
+          </p>
+          <p>
+            Embeddings, norms, and the Q4_K_M mixed-precision blocks add weight kept at higher
+            precision, plus KV cache and runtime state. Measured peak RSS: 4.3 GB (mlx),
+            4.7 GB (llama.cpp). Call the working set <strong>~4.4 GB per instance</strong>.
+          </p>
+          <p>
+            Autoregressive decode is the worst case for memory: to emit token <em>t</em>, the
+            model performs one forward pass that touches <strong>every weight exactly once</strong>.
+            There is no reuse, no cache-friendly locality to exploit — the weights <em>are</em>
+            the per-token working set. So:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            bytes moved per output token &nbsp;≈&nbsp; 4.4 GB
+          </p>
+
+          <h3>Step 2 — is decode compute-bound or memory-bound?</h3>
+          <p>
+            A quick roofline check settles it. Each weight participates in one multiply-accumulate
+            per token — 2 FLOPs per parameter, so one token of decode costs:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            2 × 7.07 × 10⁹ &nbsp;≈&nbsp; 14 GFLOP &nbsp;&nbsp;per&nbsp;&nbsp; 4.4 GB &nbsp;⇒&nbsp; ~3.2 FLOP per byte
+          </p>
+          <p>
+            The M4 Pro’s GPU offers roughly 17 TFLOPS against 273 GB/s of bandwidth — a machine
+            balance of ~62 FLOP per byte. Decode needs 3.2. The workload wants nineteen times less
+            compute per byte than the chip can balance: <strong>decode is memory-bound by an order
+            of magnitude</strong>, on any hardware, not just this one. Faster kernels can’t fix a
+            bound like this; only moving fewer bytes per token can.
+          </p>
+
+          <h3>Step 3 — so how saturated is one instance?</h3>
+          <p>
+            mlx-lm’s warm single-stream rate is 56 tok/s. Multiply:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto; overflow-y:hidden;">
+            56 tok/s × 4.4 GB/token &nbsp;≈&nbsp; 246 GB/s &nbsp;of&nbsp; 273 GB/s spec &nbsp;=&nbsp; 90%
+          </p>
+          <p>
+            <strong>The first instance — the single-user case, Part 1’s flat line — already runs
+            the bus at ~90% of spec.</strong> And this is a lower bound: KV-cache reads grow with
+            context length and ride the same bus, so true pressure is higher. The headroom left
+            for any additional instance is:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            (273 − 246) / 246 &nbsp;≈&nbsp; 11% max additional throughput
+          </p>
+          <p>
+            Measured at K=3: <strong>+9%</strong>. The prediction and the measurement close almost
+            completely — the missing couple of points are scheduler overhead and KV traffic. The
+            +9% isn’t weak scaling; it’s the <em>entire remaining bus</em>, recovered.
+          </p>
+
+          <h3>Step 4 — the invariant that pins the wall</h3>
+          <p>
+            If K instances were genuinely independent capacities, total memory traffic would scale
+            with K and the product below would grow. If instead they share one fixed bus, the
+            product must stay pinned at the bus rate. Multiply each stream’s measured decode rate
+            by its per-token bytes, then by K:
+          </p>
+          <table>
+            <thead><tr><th>K</th><th>per-stream tok/s (mlx)</th><th>× 4.4 GB</th><th>× K = total GB/s</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>55.8</td><td>246 GB/s</td><td><strong>246</strong></td></tr>
+              <tr><td>2</td><td>30.1</td><td>132 GB/s</td><td><strong>265</strong></td></tr>
+              <tr><td>3</td><td>20.4</td><td>90 GB/s</td><td><strong>269</strong></td></tr>
+            </tbody>
+          </table>
+          <p>
+            The product doesn’t grow with K — it converges upward toward a hard limit and stops:
+            <strong>246 → 265 → 269, ceilinging at the M4 Pro’s 273 GB/s spec.</strong> That is the
+            signature of a shared fixed resource. llama.cpp shows the same shape at lower effective
+            bandwidth (213 → 225 → 233 GB/s at 4.7 GB/instance) — its kernels extract less of the
+            bus per pass, which is exactly the Part 1 finding that mlx decodes faster, but the wall
+            it hits is identical.
+          </p>
+          <p>
+            And the per-stream cost falls out of the same equation: total bandwidth is fixed, so
+            each stream gets roughly <span style="font-family:'JetBrains Mono',monospace;">β/K</span>,
+            meaning TPOT scales with K:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            TPOT(K) ≈ K × 4.4 GB / β
+          </p>
+          <p>
+            Measured: 17 → 32 → 48 ms (mlx) and 22 → 41 → 60 ms (llama.cpp). Near-perfect
+            proportionality to K, exactly as the shared-bus model predicts.
+          </p>
+          <p>
+            Once you see the arithmetic, the chart stops looking like a bug and starts looking
+            like physics.
+          </p>
+
+          <h2>Two ceilings</h2>
+          <p>The ceiling diagram on Apple Silicon has two layers, and this benchmark separates them:</p>
+          <ol>
+            <li>
+              <strong>The lock ceiling</strong> — one instance serializes every request
+              (Part 1’s flat line). Removed by running K instances.
+            </li>
+            <li>
+              <strong>The bandwidth ceiling</strong> — remove the lock, and the memory bus becomes
+              the limit (this benchmark). Each instance draws ~4.4 GB per token from the same
+              ~273 GB/s; the first one already takes 90% of it.
+            </li>
+          </ol>
+          <p>
+            Part 1 measured layer 1 and thought it was the floor. It wasn’t — it was sitting on
+            layer 2.
+          </p>
+
+          <h2>Why continuous batching is the only real fix</h2>
+          <p>
+            Everything above reduces to one ratio: bytes of weights moved <em>per token served</em>.
+            A lone stream pays the full 4.4 GB. But a batched forward pass over B concurrent
+            requests reads the weights <strong>once for the whole batch</strong> — the same bytes
+            amortize over B tokens:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            bytes per token &nbsp;=&nbsp; 4.4 GB / B &nbsp;&nbsp;⇒&nbsp;&nbsp; same bus, B× the streams
+          </p>
+          <p>
+            That division — not instance count, not kernel tuning — is the entire reason
+            <code>vLLM</code>, <code>SGLang</code>, <code>TensorRT-LLM</code>, and <code>TGI</code>
+            exist, and why “just run K instances” is not a substitute for any of them. None of the
+            continuous-batching engines run on Apple Silicon today. So on a MacBook Pro your real
+            options are exactly three:
+          </p>
+          <ol>
+            <li>One instance, serialized — measured here, at its ceiling.</li>
+            <li>K instances — measured here, recovering the last ~10% of the bus for 3× the RAM.</li>
+            <li>Wait for someone to ship continuous batching for Metal.</li>
+          </ol>
+
+          <p style="font-size:.88em; opacity:.8;">
+            One methodology footnote: under memory pressure, macOS/Metal page accounting makes mlx
+            workers’ reported RSS wander between runs, while llama.cpp’s reports scale linearly —
+            the RSS figures above use llama.cpp’s accounting where they must agree. All caveats in
+            <a href="https://github.com/anubhavagr/inference-lab/blob/main/docs/methodology.md" target="_blank" rel="noopener"><code>docs/methodology.md</code></a>.
+          </p>
+
+          <h2>What I’d actually do with this</h2>
+          <ol>
+            <li>
+              <strong>Single user or async batch jobs: the laptop is enough.</strong>
+              45–56 tok/s on a 7B model with zero per-token cost, zero network latency, and full
+              data privacy. Genuinely competitive with GPT-3.5-class APIs for one consumer.
+            </li>
+            <li>
+              <strong>A team: this data retires the “fleet of cheap Macs” plan.</strong>
+              Mac farms multiply RAM, power, and dollars for single-digit throughput — the bus
+              doesn’t replicate across instances on one SoC, and a fleet of separate Macs just
+              parallelizes the queue, it doesn’t raise per-instance rates. The honest multi-user
+              answer is a cloud GPU behind a continuous-batching engine.
+            </li>
+            <li>
+              <strong>Engine choice still follows workload shape</strong> — TTFT-sensitive chat to
+              llama.cpp, decode-heavy generation to mlx-lm
+              (<a href="inference-lab.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1’s decision table</a>).
+            </li>
+          </ol>
+
+          <h2>What’s next</h2>
+          <p>
+            The bandwidth model above makes a testable prediction. An H100 offers ~3.35 TB/s of
+            HBM against the M4 Pro’s 273 GB/s:
+          </p>
+          <p style="font-family:'JetBrains Mono',monospace; font-size:.92em; padding:.9rem 1.2rem; background:color-mix(in srgb, var(--accent) 5%, transparent); border-radius:6px; overflow-x:auto;">
+            3,350 / 273 &nbsp;≈&nbsp; 12× the memory bus &nbsp;⇒&nbsp; ~12× the decode ceiling
+          </p>
+          <p>
+            Phase 2 rents an H100 for a day and runs this exact workload against vLLM and
+            TensorRT-LLM with continuous batching. If the same arithmetic holds, the interesting
+            number that falls out is the <strong>cost-per-token crossover</strong> — the exact
+            concurrency at which cloud GPU becomes cheaper than buying another MacBook. Same
+            fairness contract, same 12 prompts, one chart that answers “local or cloud?” for good.
+          </p>
+
+          <h2>Reproduce</h2>
+          <pre><code>git clone https://github.com/anubhavagr/inference-lab
+cd inference-lab
+uv venv &amp;&amp; source .venv/bin/activate
+uv pip install mlx-lm llama-cpp-python matplotlib rich
+
+hf download mlx-community/Qwen2.5-7B-Instruct-4bit --local-dir models/qwen25-7b-mlx-4bit
+hf download bartowski/Qwen2.5-7B-Instruct-GGUF --include "*Q4_K_M*" --local-dir models/qwen25-7b-gguf-q4k
+
+# K-instance dispatcher, K = 1, 2, 3 (one process per instance)
+python bench.py dispatch mlx   models/qwen25-7b-mlx-4bit
+python bench.py dispatch llama models/qwen25-7b-gguf-q4k/Qwen2.5-7B-Instruct-Q4_K_M.gguf
+
+python -m bench.plots</code></pre>
+          <p>
+            Run it on your own machine and check Step 4 yourself: multiply your per-stream tok/s
+            by your model’s GB and by K. If it pins near your chip’s memory bandwidth — and it
+            will — you’ve found your ceiling too.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="https://github.com/anubhavagr/inference-lab" target="_blank" rel="noopener">Repo on GitHub</a>
+            <a class="btn btn--ghost btn--sm" href="inference-lab.html">← Read Part 1</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#contact">Get in touch</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=3"></script>
+</body>
+</html>

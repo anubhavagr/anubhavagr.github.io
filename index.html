@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="color-scheme" content="dark light" />
+  <meta name="color-scheme" content="light" />
   <meta name="theme-color" content="#f1ece0" />
 
   <title>Anubhav Agrawal — Machine Learning Engineer</title>
@@ -24,7 +24,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=3" />
 
   <script type="application/ld+json">
   {
@@ -46,22 +46,19 @@
   <header class="nav" id="nav">
     <div class="container nav__inner">
       <a class="brand" href="#top" aria-label="Anubhav Agrawal — home">
-        <span class="brand__mark">AA</span>
         <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
       </a>
 
       <nav class="nav__links" id="nav-links" aria-label="Primary">
         <a href="#work">Work</a>
+        <a href="#blog">Blog</a>
         <a href="#lab">Open source</a>
-        <a href="#experience">Path</a>
+        <a href="#experience">Experience</a>
         <a href="#contact">Contact</a>
       </nav>
 
       <div class="nav__cta">
         <a class="js-resume-link btn btn--primary btn--sm" href="assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
-        <button id="theme-toggle" class="nav__theme" aria-label="Toggle color theme">
-          <svg id="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
-        </button>
         <button id="burger" class="nav__burger" aria-label="Toggle menu" aria-expanded="false">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
@@ -81,8 +78,8 @@
       </div>
       <h1>Anubhav Agrawal</h1>
       <p class="identity__role">
-        Machine learning engineer. I build vision and language systems that have to work in production —
-        and the inference stack they actually run on.
+        Machine learning engineer. Vision and language systems in production —
+        and the inference stack they run on.
       </p>
       <div class="identity__contact">
         <a href="mailto:anubhavagr.mail@gmail.com">
@@ -108,21 +105,8 @@
     <section class="lead reveal" aria-label="Intro">
       <div class="lead__bar">
         <p>
-          I'm a machine learning engineer who works across the full lifecycle of a deep learning
-          system — architecture, training, and deployment on real hardware.
-        </p>
-        <p>
-          Most of my work falls in two places. In <strong>computer vision</strong>, I design and train
-          CNN and segmentation networks for medical imaging, then squeeze them onto hospital hardware
-          through quantization and TensorRT — where every millisecond of latency matters during a live
-          procedure. In <strong>large language models</strong>, I work on retrieval-augmented generation
-          and agentic pipelines, and the evaluation infrastructure that makes LLM output trustworthy
-          enough to actually ship.
-        </p>
-        <p>
-          Three years in, my strongest conviction is that the model is rarely the hard part. The hard
-          part is the data, the latency budget, and the eval harness that lets you iterate without
-          breaking things. That's where I spend most of my time.
+          End-to-end: architecture, training, deployment on real hardware. Computer vision for
+          medical imaging; LLM systems — RAG, agents, evaluation.
         </p>
       </div>
       <div class="lead__stats">
@@ -136,12 +120,19 @@
     <!-- ------------------------------------------------------------ WORK -->
     <section class="section" id="work">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">01</span><span class="label">Selected work</span></h2>
-        <p class="section__sub">
-          Two production systems, each shipped and still measured in front of real users. Not demos.
-        </p>
+        <h2 class="section__title"><span class="kicker">01</span><span class="label">Work</span></h2>
       </div>
       <div id="work-grid" class="grid-2">
+        <!-- rendered by main.js -->
+      </div>
+    </section>
+
+    <!-- ------------------------------------------------------------ WRITING -->
+    <section class="section" id="blog">
+      <div class="section__head">
+        <h2 class="section__title"><span class="kicker">02</span><span class="label">Blog</span></h2>
+      </div>
+      <div id="posts-grid">
         <!-- rendered by main.js -->
       </div>
     </section>
@@ -149,11 +140,7 @@
     <!-- ------------------------------------------------------------ OPEN SOURCE -->
     <section class="section" id="lab">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">02</span><span class="label">Open source</span></h2>
-        <p class="section__sub">
-          Personal deep-learning and computer-vision work, with the actual inputs and outputs visible —
-          not just a README.
-        </p>
+        <h2 class="section__title"><span class="kicker">03</span><span class="label">Open source</span></h2>
       </div>
       <div id="lab-grid" class="grid-2">
         <!-- rendered by main.js -->
@@ -172,7 +159,7 @@
     <!-- ------------------------------------------------------------ EXPERIENCE -->
     <section class="section" id="experience">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">03</span><span class="label">How I got here</span></h2>
+        <h2 class="section__title"><span class="kicker">04</span><span class="label">Experience</span></h2>
       </div>
 
       <div class="timeline">
@@ -183,18 +170,15 @@
           </div>
           <div class="tl-role">AI Engineer — 2</div>
           <p class="tl-lede">
-            The brief was an AI interviewer that doesn't feel like a chatbot. The hard part wasn't
-            asking questions — it was actually <em>listening</em>: scoring answers, scaling question
-            difficulty live, and asking the kind of follow-up a real interviewer would. I built the
-            brain behind it.
+            An AI interviewer that listens — scoring answers, scaling difficulty live, asking real
+            follow-ups. I built the brain behind it.
           </p>
           <ul>
-            <li>A stateful <b>LangGraph</b> agent — every node a reasoned step, with state carried across turns so the conversation stays coherent over long sessions.</li>
-            <li>A RAG pipeline pulling from <b>three retrieval paths in parallel</b> (conversation embeddings, MongoDB, knowledge vault) with hybrid keyword + dense search and a cross-encoder re-ranker — <b>0.95 Recall@5</b> over <b>10K+ docs</b>.</li>
-            <li>Query latency cut from <b>2.5s → 0.8s (−68%)</b> by running the paths concurrently and re-ranking only the fused top-K; domain-query <b>F1 +42%</b>.</li>
-            <li>An <b>eval harness</b> (recall, faithfulness, answer-relevance) plus LLM guardrails with citations — so every claim is traceable to a source.</li>
+            <li>Stateful <b>LangGraph</b> agent; RAG over <b>three parallel retrieval paths</b>, hybrid search, cross-encoder re-ranking — <b>0.95 Recall@5</b> over <b>10K+ docs</b>.</li>
+            <li>Query latency <b>2.5s → 0.8s (−68%)</b>; domain-query <b>F1 +42%</b>.</li>
+            <li><b>Eval harness</b> (recall, faithfulness, answer-relevance) with cited, traceable output.</li>
           </ul>
-          <p class="tl-tail">Today: <b>500+ concurrent users</b> at <b>99.9% uptime</b>.</p>
+          <p class="tl-tail">Today: <b>500+ concurrent users</b> · <b>99.9% uptime</b>.</p>
         </div>
 
         <div class="tl-item">
@@ -204,21 +188,19 @@
           </div>
           <div class="tl-role">Machine Learning Engineer &amp; Team Lead</div>
           <p class="tl-lede">
-            I joined as an intern on X-ray image quality and left two years later as the ML team lead.
-            Along the way I shipped <b>AIMAG</b> — a product line doing super-resolution and denoising
-            on live cath-lab feeds, and the QCA pipeline cardiologists use during procedures.
+            Joined as an intern on X-ray image quality; left two years later as ML team lead. Shipped
+            <b>AIMAG</b> — super-resolution and denoising on live cath-lab feeds.
           </p>
           <ul>
-            <li>Built and shipped AIMAG end-to-end — model R&amp;D, data, quantization, release — at <b>$200K+ ARR</b>.</li>
-            <li>Rebuilt the serving stack <b>PyTorch → ONNX → TensorRT</b> with <b>INT8/FP16</b> + <b>FastAPI (C++)</b> — <b>600+ FPS</b> on RTX 4090, <b>−70% latency</b>, <b>&lt;5% accuracy loss</b>, <b>−35% VRAM</b>.</li>
-            <li>Automatic <b>QCA</b> pipeline (segmentation → calibration → prediction) in <b>&lt;4 s</b>; fine-tuned <b>U-Net++ (ResNet50)</b> at <b>0.94 Dice</b>.</li>
-            <li>Led a <b>6-engineer ML team</b> — roadmap, review standards, clinical validation.</li>
+            <li>AIMAG end-to-end — R&amp;D, data, quantization, release — at <b>$200K+ ARR</b>.</li>
+            <li><b>PyTorch → ONNX → TensorRT</b>, INT8/FP16, FastAPI/C++: <b>600+ FPS</b> on RTX 4090, <b>−70% latency</b>, <b>&lt;5% accuracy loss</b>.</li>
+            <li>Automatic <b>QCA</b> pipeline in <b>&lt;4 s</b>; <b>U-Net++ (ResNet50)</b> at <b>0.94 Dice</b>. Led a <b>6-engineer team</b>.</li>
           </ul>
           <div class="tl-subblock">
             <div class="tl-role">Image Quality Engineer Intern · Nov 2022 — May 2023</div>
             <p class="tl-lede">
-              Motion-compensated stitching &amp; denoising for <b>DSA</b> sequences — <b>+20% clarity</b>
-              at <b>&lt;2-px</b> registration error via optical-flow alignment.
+              Motion-compensated stitching &amp; denoising for <b>DSA</b> — <b>+20% clarity</b> at
+              <b>&lt;2-px</b> registration error.
             </p>
           </div>
         </div>
@@ -250,8 +232,7 @@
     <!-- ------------------------------------------------------------ TOOLKIT -->
     <section class="section" id="skills">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">04</span><span class="label">Toolkit</span></h2>
-        <p class="section__sub">What I reach for when shipping.</p>
+        <h2 class="section__title"><span class="kicker">05</span><span class="label">Skills</span></h2>
       </div>
       <div class="skills-grid">
         <div class="skill-group">
@@ -284,17 +265,13 @@
     <!-- ------------------------------------------------------------ CONTACT -->
     <section class="section" id="contact">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">05</span><span class="label">Let's talk</span></h2>
-        <p class="section__sub">
-          Best via email — I usually reply within a day. Currently considering senior ML / AI engineer
-          and staff-level roles, plus selected contract work.
-        </p>
+        <h2 class="section__title"><span class="kicker">06</span><span class="label">Contact</span></h2>
+        <p class="section__sub">anubhavagr.mail@gmail.com</p>
       </div>
       <div class="lead" style="border-left-color: var(--accent);">
         <div class="lead__bar">
           <p style="font-size:1.05rem; color:var(--text);">
-            If you're hiring for production ML — vision, LLMs, or the deployment surface between —
-            I'd like to hear about it.
+            Open to senior ML / AI engineer roles.
           </p>
           <p style="margin-top:1rem; display:flex; flex-wrap:wrap; gap:0.5rem;">
             <a class="btn btn--primary btn--sm" href="mailto:anubhavagr.mail@gmail.com">Email me →</a>
@@ -330,7 +307,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
   </button>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/main.js"></script>
+  <script src="assets/js/data.js?v=3"></script>
+  <script src="assets/js/main.js?v=3"></script>
 </body>
 </html>

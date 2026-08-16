@@ -1,6 +1,7 @@
 /* ----------------------------------------------------------------------------
  * Content data for the portfolio.
  *   - cases:    flagship work, large cards linking to case-study pages
+ *   - posts:    benchmark write-ups, list rows linking to post pages
  *   - lab:      side projects with real visual results (image, hook, chips)
  *   - projects: text-only chips for further GitHub repos
  * Kept as plain JS so the markup stays clean.
@@ -13,7 +14,7 @@ window.SITE_DATA = {
       href: "projects/aimag.html",
       tag: "Computer Vision · Medical AI",
       blurb:
-        "Two years building and shipping an X-ray super-resolution & denoising product line end-to-end — model R&D, INT8/FP16 quantization, FastAPI/C++ serving, and the QCA pipeline cardiologists actually use.",
+        "X-ray super-resolution and denoising shipped end-to-end — model R&D, INT8/FP16 quantization, TensorRT/C++ serving, and the QCA pipeline cardiologists use in live procedures.",
       kpis: [
         { v: "$200K+", l: "ARR" },
         { v: "600+", l: "FPS" },
@@ -27,7 +28,7 @@ window.SITE_DATA = {
       href: "projects/adaptive-rag.html",
       tag: "LLMs · Retrieval · Production",
       blurb:
-        "Built the retrieval & reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth.",
+        "The retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth.",
       kpis: [
         { v: "0.95", l: "Recall@5" },
         { v: "0.8s", l: "p50 latency" },
@@ -35,20 +36,23 @@ window.SITE_DATA = {
         { v: "500+", l: "users" }
       ],
       chips: ["LangGraph", "RAG", "MongoDB", "Cross-Encoder", "Eval Harness"]
+    }
+  ],
+
+  posts: [
+    {
+      title: "A MacBook Pro can serve an LLM. Then the second user arrives.",
+      href: "posts/inference-lab.html",
+      tag: "Part 1",
+      date: "Aug 2026",
+      dek: "mlx-lm vs llama.cpp under one fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from one user to thirty-two. Crash forensics find the lock."
     },
     {
-      title: "Inference Lab — MLX vs llama.cpp on Apple Silicon",
-      href: "posts/inference-lab.html",
-      tag: "LLM Serving · Benchmarking",
-      blurb:
-        "A reproducible LLM-serving benchmark for the M4 Pro — mlx-lm and llama.cpp on the same Qwen2.5-7B-Instruct model, same prompts, same fairness contract. The honest answer to when local stops being cheaper than cloud.",
-      kpis: [
-        { v: "56", l: "tok/s mlx" },
-        { v: "45", l: "tok/s llama" },
-        { v: "100 ms", l: "TTFT llama" },
-        { v: "±4%", l: "conc flat" }
-      ],
-      chips: ["mlx-lm", "llama.cpp", "Metal", "Benchmarking"]
+      title: "Three times the memory bought me nine percent.",
+      href: "posts/inference-lab-2.html",
+      tag: "Part 2",
+      date: "Aug 2026",
+      dek: "K process-isolated instances behind one queue: +9% for 3× the RAM. The arithmetic says why — one instance already saturates the M4 Pro's memory bus."
     }
   ],
 
@@ -58,7 +62,7 @@ window.SITE_DATA = {
       title: "Colorizing black-and-white photography",
       repo: "no_more_BWs",
       hook:
-        "Two deep colorization models — ECCV'16 and SIGGRAPH'17 — run side by side over Ansel Adams landscapes and personal photos. Four-panel grid: original, B&W input, ECCV output, SIGGRAPH output.",
+        "ECCV'16 and SIGGRAPH'17 colorization run side by side over Ansel Adams landscapes and personal photos. Four-panel grid: original, B&W input, both outputs.",
       img: "assets/img/projects/colorization.png",
       alt: "Four-panel colorization grid comparing ECCV and SIGGRAPH model outputs",
       href: "https://github.com/anubhavagr/no_more_BWs",
@@ -68,7 +72,7 @@ window.SITE_DATA = {
       title: "Painting photos with the style of other art",
       repo: "neural-style-transfer",
       hook:
-        "Gatys et al. (2015) reimplemented from scratch in PyTorch — content + style aligned through VGG feature maps and Gram-matrix losses. Hundreds of style/content pairs rendered through one notebook.",
+        "Gatys et al. (2015) reimplemented from scratch — content + style aligned through VGG feature maps and Gram-matrix losses.",
       img: "assets/img/projects/style-transfer-1.png",
       alt: "Neural style transfer output showing a content image restyled",
       href: "https://github.com/anubhavagr/neural-style-transfer",
@@ -78,7 +82,7 @@ window.SITE_DATA = {
       title: "Stitching N photos into one wide view",
       repo: "Panorama-image-stitching",
       hook:
-        "Feature matching → homography → warping → blending, end to end on OpenCV. Output below: three overlapping frames fused into a single 3815-pixel-wide panorama.",
+        "Feature matching → homography → warping → blending, end to end on OpenCV. Three overlapping frames fused into one 3815-px panorama.",
       img: "assets/img/projects/panorama.png",
       alt: "Wide panorama stitched from three overlapping photographs",
       href: "https://github.com/anubhavagr/Panorama-image-stitching",
@@ -91,7 +95,7 @@ window.SITE_DATA = {
     {
       name: "ArterySeg",
       desc:
-        "Coronary artery segmentation with a U-Net++/ResNet50 encoder, a custom Sobel edge-enhancement layer, spatial attention, mixed-precision training, and a TensorRT export + benchmark path.",
+        "Coronary artery segmentation — U-Net++/ResNet50 encoder, Sobel edge-enhancement layer, spatial attention, TensorRT export.",
       href: "https://github.com/anubhavagr/ArterySeg",
       note: "U-Net++ · ResNet50 · TensorRT",
       chips: ["PyTorch", "Segmentation", "TensorRT", "Medical"]
@@ -99,7 +103,7 @@ window.SITE_DATA = {
     {
       name: "find-me-lens",
       desc:
-        "Content-based image retrieval (a Google Lens clone) benchmarking five CNN backbones — ResNet34, MobileNetV2, EfficientNet-B0, DenseNet121, InceptionV3 — over FAISS. Measured 1.00 precision / 0.87 recall at ~30 ms inference.",
+        "Content-based image retrieval over FAISS, benchmarking five CNN backbones. 1.00 precision / 0.87 recall at ~30 ms.",
       href: "https://github.com/anubhavagr/find-me-lens",
       note: "P 1.00 · R 0.87 · 30 ms",
       chips: ["FAISS", "CNN", "Embeddings", "Python"]
@@ -107,7 +111,7 @@ window.SITE_DATA = {
     {
       name: "VideoStabilization",
       desc:
-        "Frame-to-frame affine trajectory extraction → smoothed via constrained optimization → cropped output following the smoothed path. Three sample clips in the repo.",
+        "Affine trajectory extraction → constrained-optimization smoothing → path-following crop.",
       href: "https://github.com/anubhavagr/VideoStabilization",
       note: "Affine · trajectory smoothing",
       chips: ["OpenCV", "Optimization", "Video"]
@@ -115,7 +119,7 @@ window.SITE_DATA = {
     {
       name: "pytorch-cpp-tensorrt",
       desc:
-        "End-to-end PyTorch → ONNX → TensorRT → C++ conversion walkthrough with notebooks for each stage. The pattern I use in production, distilled into a teaching repo.",
+        "PyTorch → ONNX → TensorRT → C++ walkthrough, one notebook per stage. The pattern I use in production.",
       href: "https://github.com/anubhavagr/pytorch-cpp-tensorrt",
       note: "5-stage pipeline",
       chips: ["TensorRT", "ONNX", "C++", "Deployment"]
@@ -123,7 +127,7 @@ window.SITE_DATA = {
     {
       name: "Condio",
       desc:
-        "A multiprocessing audio format converter that parallelizes batch conversion across CPU cores.",
+        "Multiprocessing audio format converter across CPU cores.",
       href: "https://github.com/anubhavagr/Condio",
       note: "multiprocessing",
       chips: ["Python", "Audio"]
@@ -131,7 +135,7 @@ window.SITE_DATA = {
     {
       name: "LLMfromscratch",
       desc:
-        "Active fork of a 36-project build-every-layer LLM manual — kept for deep architectural fluency on transformer internals.",
+        "Active fork of a 36-project build-every-layer LLM manual.",
       href: "https://github.com/anubhavagr/LLMfromscratch",
       note: "36 projects",
       chips: ["LLM", "Transformers"]
