@@ -14,7 +14,7 @@ window.SITE_DATA = {
       href: "projects/aimag.html",
       tag: "Computer Vision · Medical AI",
       blurb:
-        "X-ray super-resolution and denoising shipped end-to-end — model R&D, INT8/FP16 quantization, TensorRT/C++ serving, and the QCA pipeline cardiologists use in live procedures.",
+        "X-ray super-resolution and denoising, owned end-to-end — model R&D, INT8/FP16 quantization, TensorRT/C++ serving, and the QCA pipeline cardiologists use in live procedures.",
       kpis: [
         { v: "$200K+", l: "ARR" },
         { v: "600+", l: "FPS" },
@@ -28,7 +28,7 @@ window.SITE_DATA = {
       href: "projects/adaptive-rag.html",
       tag: "LLMs · Retrieval · Production",
       blurb:
-        "The retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth.",
+        "Built the retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth.",
       kpis: [
         { v: "0.95", l: "Recall@5" },
         { v: "0.8s", l: "p50 latency" },
@@ -53,6 +53,34 @@ window.SITE_DATA = {
       tag: "Part 2",
       date: "Aug 2026",
       dek: "K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus."
+    },
+    {
+      title: "256 levels is plenty. Here's the math that proves it.",
+      href: "posts/int8-quantization.html",
+      tag: "Inference",
+      date: "Aug 2026",
+      dek: "INT8 derived from scratch: the affine map, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB."
+    },
+    {
+      title: "Image search is geometry before it is learning.",
+      href: "posts/image-search-geometry.html",
+      tag: "Retrieval",
+      date: "Aug 2026",
+      dek: "The cosine/L2 equivalence is a two-line proof, P 1.00 / R 0.87 is a diagnosis, and the exact-search wall is arithmetic — across 5 CNN backbones on FAISS."
+    },
+    {
+      title: "99.6% accuracy, completely useless.",
+      href: "posts/dice-imbalance.html",
+      tag: "Medical CV",
+      date: "Aug 2026",
+      dek: "A 2-px vessel is 0.39% of an X-ray frame. Why cross-entropy starves it — derived — and the geometry of Dice that doesn't. A 1-px boundary error costs 33 Dice points."
+    },
+    {
+      title: "The Gram matrix doesn't care where anything is.",
+      href: "posts/gram-matrix.html",
+      tag: "Deep Learning",
+      date: "Aug 2026",
+      dek: "Shuffle every feature position and G moves by 1.7e-18 — measured. What that invariance buys in style transfer, plus the receptive-field arithmetic that picks the layers."
     }
   ],
 

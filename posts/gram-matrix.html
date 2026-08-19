@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Gram matrix doesn't care where anything is · Anubhav Agrawal</title>
+  <meta name="description" content="Shuffle every feature position and the Gram matrix doesn't move — measured at 1.7e-18. What that invariance buys in neural style transfer, the gradients derived, and the receptive-field arithmetic that picks the layers." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All posts
+          </a>
+          <span class="card__tag">Deep Learning · Perception</span>
+          <h1 style="margin-top:.8rem;">The Gram matrix doesn't care where anything is.</h1>
+          <p class="sub">Gatys' 2015 style-transfer paper hinges on one object: the Gram matrix of a CNN's feature maps. I reimplemented it from scratch and found the entire method makes sense the moment you see — algebraically, then measured — that the Gram matrix is a deliberate act of forgetting.</p>
+
+          <div class="article__meta">
+            <div><b>Method</b><span>Gatys et al. 2015</span></div>
+            <div><b>Network</b><span>VGG feature space</span></div>
+            <div><b>Optimizer</b><span>L-BFGS on pixels</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/neural-style-transfer" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/neural-style-transfer</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              Style transfer synthesizes an image by <strong>optimizing pixels against a frozen
+              network</strong> — the image is the parameter. Content is "where the features are"; style is
+              "which features co-occur." The Gram matrix G = FFᵀ enforces the second definition by
+              <strong>discarding all spatial information</strong> — provable by permutation invariance, and
+              I measured it: <strong>shuffle every position, G changes by 1.7 × 10⁻¹⁸</strong>. Layer
+              choice falls out of receptive-field arithmetic: <strong>3 px at conv1_1 → 196 px at
+              conv5_3</strong>.
+            </p>
+          </div>
+
+          <h2>The inversion</h2>
+          <p>
+            Most deep learning trains a network to fit an image. Gatys et al. (2015) froze the network and
+            fit an <em>image</em> to the network: start from noise, run VGG, compare feature statistics to
+            a content photo and a style painting, and backprop the difference <em>into the pixels</em>.
+            Every result in that paper — and in my reimplementation — comes from what you choose to compare.
+          </p>
+          <p>
+            For a layer ℓ with C channels and H·W positions, write the feature map as
+            F<sup>ℓ</sup> ∈ ℝ<sup>C×HW</sup>. Two comparisons define the entire method:
+          </p>
+          <blockquote>
+            L<sub>content</sub> = ½ ‖F<sup>ℓ</sup>(x) − F<sup>ℓ</sup>(p)‖²
+            &nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
+            G<sup>ℓ</sup> = F<sup>ℓ</sup>(F<sup>ℓ</sup>)ᵀ / HW
+          </blockquote>
+          <p>
+            Content loss compares feature maps element-wise — <strong>position by position</strong>: the
+            activation at location (i, j) should match the photo's activation at (i, j). The style term
+            compares Gram matrices instead, and the Gram matrix is where it gets interesting.
+          </p>
+
+          <h2>The proof: G is a sum over positions</h2>
+          <p>
+            Unroll the matrix product. With f<sub>k</sub> the C-dimensional feature column at spatial
+            position k:
+          </p>
+          <blockquote>
+            G = F Fᵀ / HW = (1 / HW) · Σ<sub>k=1..HW</sub> f<sub>k</sub> f<sub>k</sub>ᵀ
+          </blockquote>
+          <p>
+            A sum. Matrix addition commutes — so <strong>any permutation of the spatial positions leaves G
+            unchanged</strong>, exactly. Destroy the image's layout entirely and the style representation
+            cannot notice. G's entries say "how often does channel i fire together with channel j," and
+            nowhere do they say <em>where</em>. That is the design: texture is precisely the thing that
+            stays the same when you move it around.
+          </p>
+          <p>
+            I ran the experiment rather than just asserting it. Two synthetic feature tensors — one
+            edge-structured (Gabor-like activations at fixed positions), one stationary texture — and one
+            shuffle of every single position:
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/gram-matrix/permutation_invariance.png" alt="Six-panel grid: composite activation maps and their Gram matrix heatmaps for an edge-structured tensor and a stationary texture tensor, showing that shuffling all spatial positions leaves the Gram matrix unchanged." />
+            <figcaption>Top row: edge-structured activations, their Gram, and the Gram after shuffling every position — max |ΔG| = 1.7 × 10⁻¹⁸, i.e., machine zero. Bottom row: for genuinely stationary textures, two independent draws already share the Gram statistics. The proof is the top row; the interpretation is the bottom one.</figcaption>
+          </figure>
+
+          <p>
+            The top row is the algebra made physical: the composite activation map is visibly destroyed by
+            the shuffle, and the Gram is untouched to 18 decimal places. The bottom row is why this is the
+            right notion of style: two <em>different</em> draws of a stationary texture produce the same
+            Gram statistics, because they agree on co-occurrence. Texture synthesis by statistics-matching
+            (Gatys' preceding 2015 paper) is exactly this: a homogeneous texture is characterized by its
+            feature covariance — and G is the sample covariance of filter responses.
+          </p>
+
+          <h2>The gradients</h2>
+          <p>
+            Both losses are quadratic in F, so the gradients are closed-form. Content, by inspection:
+          </p>
+          <blockquote>
+            ∂L<sub>content</sub>/∂F<sup>ℓ</sup> = F<sup>ℓ</sup>(x) − F<sup>ℓ</sup>(p)
+          </blockquote>
+          <p>
+            Style, with E<sub>ℓ</sub> = ‖G(x) − A‖²<sub>F</sub> (A the style image's Gram; constants fold
+            into per-layer weights): differentiate the trace, use ∂G/∂F, and:
+          </p>
+          <blockquote>
+            ∂E<sub>ℓ</sub>/∂F<sup>ℓ</sup> = 2 (G − A) F
+          </blockquote>
+          <p>
+            Read the shape of that update: the residual (G − A) — <em>which co-occurrences are wrong</em> —
+            is projected back onto the features F, per position, with identical instructions at every
+            location. The style gradient is spatially uniform because the style objective is spatially
+            blind. The content gradient is a per-position correction map. Total loss is
+            α·L<sub>content</sub> + β·Σ<sub>ℓ</sub> w<sub>ℓ</sub>E<sub>ℓ</sub>, minimized over pixels with
+            L-BFGS (Gatys' choice; smooth, low-noise objective, a few hundred iterations), plus a small
+            total-variation regularizer to suppress high-frequency pixel noise.
+          </p>
+
+          <h2>Why style layers are shallow and content layers are deep</h2>
+          <p>
+            Every guide says "use early layers for style, later for content." The reason is arithmetic, and
+            you can compute it. A 3×3 conv grows each neuron's receptive field (RF) by 2 px times the
+            accumulated stride; a 2×2 max-pool doubles the stride. Run the recurrence
+            RF<sub>ℓ</sub> = RF<sub>ℓ−1</sub> + (k−1)·s<sub>cum</sub> through VGG16:
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/gram-matrix/receptive_fields.png" alt="Bar chart of receptive field size in pixels for every VGG16 layer, computed with the standard recurrence, with style layers highlighted in accent color and the content layer highlighted in dark." />
+            <figcaption>Computed, not copied: conv1_1 sees 3 px; conv2_1 sees 10; conv3_1 sees 24; the content layer conv4_2 sees 76; conv5_3 sees 196 px at stride 32. Style layers (accent) live where the RF is texture-sized; content (dark) lives where it is object-sized.</figcaption>
+          </figure>
+
+          <p>
+            Now the layer assignment stops being folklore. A neuron with a 3–24 px window can only respond
+            to <strong>local texture</strong> — brush strokes, weave, grain — and its Gram statistics are
+            texture statistics. A neuron with a 76–196 px window responds to <strong>arrangements of
+            parts</strong> — where the eyes are relative to the chin — which is exactly the "where"
+            information the content loss needs and the Gram matrix would destroy. The architecture hands
+            you a texture dial and an object dial, and Gatys' layer sets (relu1_1…relu5_1 for style,
+            relu4_2 for content) sit right where this computed table says they should.
+          </p>
+
+          <h2>What I take from it</h2>
+          <ol>
+            <li><strong>Representation = the invariances you choose.</strong> The Gram matrix isn't a clever hack; it's a statement — "for style, position is noise" — implemented in one line of linear algebra. Most design decisions in feature engineering are the same kind of statement, usually left implicit.</li>
+            <li><strong>Optimization can replace training.</strong> No parameters were learned in the making of any style-transfer image. When the objective is differentiable and the "model" is fixed, synthesis-by-optimization is often cheaper and more controllable than fine-tuning.</li>
+            <li><strong>Sanity-check invariants by measurement.</strong> The permutation check cost five lines of NumPy and caught nothing — which is itself the result: 1.7 × 10⁻¹⁸ confirms the invariance holds in float arithmetic, not just on the whiteboard.</li>
+          </ol>
+
+          <h2>Reproduce</h2>
+          <pre><code>git clone https://github.com/anubhavagr/neural-style-transfer
+cd neural-style-transfer
+
+# content + style -> stylized image, Gatys-style optimization
+python transfer.py --content in/content.jpg --style in/style.jpg \
+                   --steps 500 --style-weight 1e6 --content-weight 1</code></pre>
+          <p>
+            The permutation experiment is
+            <code>G = F @ F.T / F.shape[1]</code>, a <code>rng.permutation</code> on the position axis, and
+            a <code>np.abs(...).max()</code>. If your Gram moves by more than machine epsilon, your
+            normalization is wrong — and now you know how to check.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="int8-quantization.html">Start the series over: 256 levels is plenty →</a>
+            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/neural-style-transfer" target="_blank" rel="noopener">Repo on GitHub</a>
+            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/no_more_BWs" target="_blank" rel="noopener">Sibling repo: no_more_BWs</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=3"></script>
+</body>
+</html>

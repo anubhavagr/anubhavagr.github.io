@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image search is geometry before it is learning · Anubhav Agrawal</title>
+  <meta name="description" content="The cosine/L2 equivalence is a two-line proof, precision 1.00 with recall 0.87 is a diagnosis, and the cost of exact vs ANN search is arithmetic. Benchmarked across five CNN backbones on FAISS." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All posts
+          </a>
+          <span class="card__tag">Retrieval · Embeddings</span>
+          <h1 style="margin-top:.8rem;">Image search is geometry before it is learning.</h1>
+          <p class="sub">I benchmarked five CNN backbones on the same FAISS pipeline and every one of them scored precision 1.0000. The interesting parts — why cosine and L2 are the same metric, what P = 1.00 with R = 0.87 diagnoses, and when exact search dies — need no training at all. They're geometry and arithmetic.</p>
+
+          <div class="article__meta">
+            <div><b>Backbones</b><span>5 CNNs, 3.5M – 27M params</span></div>
+            <div><b>Index</b><span>FAISS</span></div>
+            <div><b>Best result</b><span>P 1.00 · R 0.875 @ 30 ms</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/find-me-lens</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              L2-normalize your embeddings and <strong>nearest-neighbor under L2 is provably the same ranking
+              as cosine similarity</strong> — the proof is two lines. Precision 1.0000 across all five
+              backbones while recall spans 0.85–0.875 means <strong>every miss is a ranking miss, not a
+              retrieval failure</strong>. And exact search dies on arithmetic you can do on paper:
+              <strong>4×10⁸ distance ops per query at 100K × 2048-d, vs 2.5% of that with IVF</strong>.
+            </p>
+          </div>
+
+          <h2>The system, in one breath</h2>
+          <p>
+            A content-based image retrieval pipeline — my build of "Google Lens" — is three steps: run a CNN,
+            take the penultimate-layer embedding, search a FAISS index for nearest neighbors. I put five
+            backbones through the identical harness:
+          </p>
+          <table>
+            <thead><tr><th>Backbone</th><th>Precision</th><th>Recall</th><th>F1</th><th>Latency (s)</th></tr></thead>
+            <tbody>
+              <tr><td>ResNet34</td><td>1.0000</td><td>0.8500</td><td>0.9189</td><td>0.045</td></tr>
+              <tr><td>MobileNetV2</td><td>1.0000</td><td><strong>0.8700</strong></td><td>0.9302</td><td><strong>0.030</strong></td></tr>
+              <tr><td>EfficientNet-B0</td><td>1.0000</td><td>0.8600</td><td>0.9241</td><td>0.035</td></tr>
+              <tr><td>DenseNet121</td><td>1.0000</td><td>0.8550</td><td>0.9220</td><td>0.040</td></tr>
+              <tr><td>InceptionV3</td><td>1.0000</td><td><strong>0.8750</strong></td><td><strong>0.9333</strong></td><td>0.050</td></tr>
+            </tbody>
+          </table>
+          <p>
+            Two rows of that table look boring and are actually the two most informative numbers in the
+            experiment. The rest of this post is about why.
+          </p>
+
+          <h2>Theorem 1: after normalization, L2 and cosine agree</h2>
+          <p>
+            Almost every retrieval stack L2-normalizes embeddings, then searches with L2 distance — while
+            everyone talks about cosine similarity. These are the same thing, and the proof is two lines.
+            For unit vectors <strong>a</strong>, <strong>b</strong>:
+          </p>
+          <blockquote>
+            ‖a − b‖² = ‖a‖² − 2a·b + ‖b‖² = 2 − 2·cos θ
+          </blockquote>
+          <p>
+            Squared L2 distance is a <em>strictly decreasing</em> function of cosine similarity. Ranking by
+            one is ranking by the other — argmin over L2 is argmax over cosine, no exceptions, no
+            approximations. Some numbers to make the mapping concrete:
+          </p>
+          <ul>
+            <li>cos θ = 0.90 → ‖a − b‖² = 0.200</li>
+            <li>cos θ = 0.95 → ‖a − b‖² = 0.100</li>
+            <li>cos θ = 0.99 → ‖a − b‖² = 0.020</li>
+          </ul>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/image-search-geometry/geometry.png" alt="Left: curve of squared L2 distance versus cosine similarity for unit vectors, with three marked points. Right: unit circle scatter plot of two embedding classes with an angular decision boundary and a query point." />
+            <figcaption>Left: the equivalence, computed — d² = 2 − 2 cos θ. Right: what a good embedding space is — classes that are angularly separated on the unit sphere, so a query (star) is classified by angle alone.</figcaption>
+          </figure>
+
+          <p>
+            The practical consequence: <strong>normalize once, at index time</strong>, and never think about
+            the metric again. It also frames what training actually does — not "learn similarity," but
+            <em>arrange directions on the sphere so that same-class images subtend small angles</em>. Every
+            retrieval metric you'll ever compute is a statement about that geometry.
+          </p>
+
+          <h2>Theorem 2: P = 1.00 with R &lt; 1 is a diagnosis</h2>
+          <p>
+            All five backbones scored precision exactly 1.0000 while recall sat between 0.85 and 0.875.
+            From the definitions:
+          </p>
+          <blockquote>
+            P = TP / (TP + FP),&nbsp;&nbsp;&nbsp; R = TP / (TP + FN)
+          </blockquote>
+          <p>
+            P ≡ 1.0000 means <strong>zero false positives in every returned set, for every model</strong> —
+            whatever crossed the similarity threshold was always the right class. The embedding geometry is
+            clean; nothing is mixed in. R = 0.85–0.875 then means 12.5–15% of same-class images fell below
+            the cut. All error is FN, none is FP — so <strong>the misses are ranking misses</strong>: true
+            neighbors exist in the index but score below the threshold. The fixes follow directly, and none
+            of them is "train a better classifier": return more neighbors (raise k), widen the threshold and
+            accept the precision you can afford, or improve the embedding's within-class compactness.
+          </p>
+          <p>
+            This is why I read the P/R pair before any accuracy number: the <em>shape</em> of the error
+            tells you which knob to turn. A system with P = 0.9, R = 0.9 has a completely different disease
+            than mine at P = 1.0, R = 0.87, even though F1 looks similar.
+          </p>
+
+          <h2>The arithmetic that kills exact search</h2>
+          <p>
+            My lab-scale index runs exact (Flat) search — brute-force distance to every vector. That's a
+            luxury, and the math says exactly how long the luxury lasts. For N vectors of dimension d:
+          </p>
+          <ul>
+            <li><strong>Memory:</strong> N × d × 4 bytes. At 100K × 2048-d: <strong>819 MB</strong> (409 MB in FP16).</li>
+            <li><strong>Compute per query:</strong> 2Nd ≈ <strong>4.1 × 10⁸</strong> multiply-adds.</li>
+          </ul>
+          <p>
+            Both scale linearly in N, and neither cares how good your GPU is for long. Approximate search
+            (IVF) buys back the arithmetic with a cluster index: partition into nlist cells, probe only
+            nprobe of them. With the standard heuristic nlist = √N and nprobe = 8, you scan 8√N vectors
+            instead of N — at N = 100K that's <strong>2.5% of the work</strong>; at N = 10⁷ it's 0.08%. The
+            trade is recall, and it is tunable and measurable: nprobe is a dial between exact-quality and
+            8√N cost.
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/image-search-geometry/cost.png" alt="Left: scatter plot of backbone parameter count versus measured query latency for five CNNs, with perfect rank correlation. Right: log-log plot of distance operations per query versus index size for Flat and IVF search." />
+            <figcaption>Left: measured latency tracks parameter count with Spearman ρ = 1.00 — search itself is noise next to the embedding pass. Right: Flat is 2dN; IVF with nlist = √N, nprobe = 8 is 16d√N — the gap is two orders of magnitude at 10⁷ vectors.</figcaption>
+          </figure>
+
+          <p>
+            Two footnotes from the left panel. First, latency ordering (MobileNetV2 → InceptionV3) tracks
+            parameter count <em>exactly</em> — rank correlation 1.00 — because at this scale the CNN forward
+            pass dominates; the FAISS lookup is a rounding error. Second, that makes the backbone choice a
+            real engineering decision: InceptionV3 buys +0.5 pp of recall over MobileNetV2 for 67% more
+            latency. Whether that trade is worth it is a product question — and now it's a quantified one.
+          </p>
+
+          <h2>Same math, bigger scale</h2>
+          <p>
+            Everything above transfers unchanged to the LLM side of my work. The RAG system I run at
+            <a href="../projects/adaptive-rag.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Griphic</a>
+            retrieves over 10K+ documents with 512-d embeddings: same normalization, same equivalence, same
+            recall-versus-cost dial. Retrieval quality is a system property — the metric definition, the
+            index arithmetic, and the eval harness are the parts you own. The model is one ingredient.
+          </p>
+
+          <h2>Reproduce</h2>
+          <pre><code>git clone https://github.com/anubhavagr/find-me-lens
+cd find-me-lens
+pip install -r requirements.txt   # torch, torchvision, faiss-cpu (or faiss-gpu)
+
+# index a folder of class-organized images, then evaluate all 5 backbones
+python evaluate.py --backbones resnet34 mobilenet_v2 efficientnet_b0 densenet121 inception_v3</code></pre>
+          <p>
+            The eval prints the table above, per model. Swap in your own image folders — the class-directory
+            layout is the only convention.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="dice-imbalance.html">Next: 99.6% accuracy, completely useless →</a>
+            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener">Repo on GitHub</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#contact">Get in touch</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=3"></script>
+</body>
+</html>
