@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>256 levels is plenty. Here's the math that proves it · Anubhav Agrawal</title>
+  <meta name="description" content="What INT8 quantization actually is, derived from scratch for a reader who knows what a neural network is but has never shipped one: the affine map, the error bound, calibration, and per-channel weights." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All posts
+          </a>
+          <span class="card__tag">Inference · Quantization</span>
+          <h1 style="margin-top:.8rem;">256 levels is plenty. Here's the math that proves it.</h1>
+          <p class="sub">A from-scratch derivation of INT8 quantization — the technique that shrinks a neural network 4× and makes it run on integer hardware — written for someone who knows what a neural network is but has never had to ship one to production.</p>
+
+          <div class="article__meta">
+            <div><b>Topic</b><span>Post-training INT8</span></div>
+            <div><b>In production</b><span>AIMAG · cath-lab X-ray</span></div>
+            <div><b>Payoff</b><span>600+ FPS · &lt;5% quality loss</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">pytorch-cpp-tensorrt</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              Quantization converts a network's floating-point numbers to 8-bit integers (only 256 distinct
+              values). This post derives how that conversion works, proves its error is bounded by half a
+              code step, and shows the two decisions that decide whether it degrades your model:
+              <strong>where to clip the value range</strong> (three calibration objectives pick three
+              different answers — on purpose) and <strong>per-channel scaling for weights</strong> (worth
+              +6 dB for free). Applied to a real-time X-ray product, it's how we hit
+              <strong>600+ FPS with &lt;5% quality loss</strong>.
+            </p>
+          </div>
+
+          <h2>What this post is about</h2>
+          <p>
+            Neural networks are trained and prototyped in floating point — typically 32-bit floats (FP32),
+            4 bytes per number. But the hardware that runs inference fastest — the integer units and tensor
+            cores on GPUs and embedded chips — works on <em>integers</em>, and moves 4× less data when each
+            number is 1 byte instead of 4. <strong>Quantization</strong> is the discipline of converting a
+            trained network's numbers to low-width integers — usually 8-bit (INT8), i.e. only the 256
+            integer values 0…255 — while keeping the network's output intact.
+          </p>
+          <p>
+            That sounds lossy, and it is. The interesting claim is that it's <em>barely</em> lossy, and that
+            the reasons are computable. This post walks the whole chain from first principles:
+          </p>
+          <ol>
+            <li><strong>The conversion itself</strong> — one affine formula, and a hard bound on the error it introduces.</li>
+            <li><strong>Calibration</strong> — the one genuine decision (where to clip the range), with an experiment where three sensible objectives pick three different answers.</li>
+            <li><strong>Per-channel weights</strong> — a free upgrade that recovers +6 dB of signal quality.</li>
+          </ol>
+          <p>
+            Prerequisites: you should know roughly what a neural network is (layers, weights,
+            backpropagation-as-concept). Everything else — including what FP32, activations, and TensorRT
+            mean — is defined below as it appears. If you can follow a derivative, you're qualified.
+          </p>
+
+          <h2>The vocabulary you'll need</h2>
+          <ul>
+            <li><strong>Weights</strong> are the network's learned parameters. <strong>Activations</strong> are the numbers that flow through the network at run time when an input passes through — each layer's output. Both are just big arrays of real numbers; both must be quantized.</li>
+            <li><strong>FP32</strong> = 32-bit floating point: 4 bytes, ~7 decimal digits, the training default.</li>
+            <li><strong>INT8</strong> = 8-bit integers: 1 byte, 256 distinct values.</li>
+            <li><strong>TensorRT</strong> is NVIDIA's inference compiler — it takes a trained model graph and produces an optimized, deployable engine; quantization is one of its transforms.</li>
+            <li><strong>Calibration</strong> = the process of choosing the quantization ranges by running sample inputs through the network and looking at the actual value distributions.</li>
+          </ul>
+
+          <h2>The project behind the math</h2>
+          <p>
+            I'm not quantizing for sport. At work I own <strong>AIMAG</strong>, an X-ray image-enhancement
+            product that runs <em>inside the cath-lab</em> — while a cardiologist threads a stent through a
+            patient's coronary artery, our network upscales and denoises the live fluoroscopy feed. "A
+            model that runs when you feel like it" is not an option there: frames arrive on a fixed clock,
+            and the enhancement has to keep up, every frame, alongside the rest of the imaging stack on the
+            same workstation. Quantization was the single highest-leverage change in making that possible.
+            The stage-by-stage pipeline (PyTorch → ONNX → TensorRT → C++) is walked through in
+            <a href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener">this repo</a>;
+            the <a href="../projects/aimag.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">AIMAG case study</a> has the full product story.
+          </p>
+
+          <h2>1. The conversion, derived</h2>
+          <p>
+            Here is the entire problem: you have real numbers in a known range
+            [x<sub>min</sub>, x<sub>max</sub>] and 256 integer codes to represent them. Everything in this
+            section is the solution to that one sentence.
+          </p>
+          <p>
+            The standard answer is an <em>affine</em> (straight-line) map — a scale <em>s</em> and an offset
+            <em>z</em> — chosen so the range covers all 256 codes exactly. Demanding that
+            x<sub>min</sub> ↦ code 0 and x<sub>max</sub> ↦ code 255 gives two equations in two unknowns;
+            solve them and you get:
+          </p>
+          <blockquote>
+            q = round(x / s) + z,&nbsp;&nbsp;&nbsp; s = (x<sub>max</sub> − x<sub>min</sub>) / (2<sup>b</sup> − 1),&nbsp;&nbsp;&nbsp; z = round(−x<sub>min</sub> / s)
+          </blockquote>
+          <p>
+            Worked example, from a real activation tensor spanning [−2.1, 3.4] with b = 8:
+          </p>
+          <ul>
+            <li><em>s</em> = 5.5 / 255 ≈ <strong>0.0216</strong> — the value of one code step</li>
+            <li><em>z</em> = round(2.1 / 0.0216) = <strong>97</strong> — the code that represents the value 0</li>
+          </ul>
+          <p>
+            The error bound is now one line. Rounding moves a value by at most half a step, so the
+            reconstructed value x̂ satisfies
+          </p>
+          <blockquote>
+            |x − x̂| ≤ s / 2 ≈ 0.0108&nbsp;&nbsp;— for <em>every</em> value in range, always.
+          </blockquote>
+          <p>
+            That inequality is the entire "is 8 bits enough" calculation: <strong>compare s/2 against the
+            smallest difference your application can perceive</strong>. A network whose activations span
+            units will shrug off thousandths of noise per element — it sums over thousands of them. A
+            physics model tracking 10⁻⁶ differences won't. This is why INT8 is routine and INT4 needs care:
+            halving the bits doubles s and doubles the bound.
+          </p>
+          <p>
+            One more consequence worth savoring: because both maps are straight lines, the convolution
+            y = w·x can run as pure integer arithmetic, and the two quantization scales collapse into a
+            single output multiplier (s<sub>w</sub>·s<sub>x</sub>/s<sub>y</sub>) applied once. That folding
+            is why the integer kernels are worth building at all.
+          </p>
+
+          <h2>2. Calibration: the one real decision</h2>
+          <p>
+            Section 1 assumed you know [x<sub>min</sub>, x<sub>max</sub>]. For weights you do — they're
+            fixed after training. For activations you don't: their ranges depend on the inputs at run time.
+            You estimate them by <em>calibration</em> — running a few hundred representative inputs through
+            the network and measuring.
+          </p>
+          <p>
+            Here's why this is a genuine decision and not bookkeeping. Real activation values are
+            lopsided: a huge bulk of values clustered near zero, and a long thin tail of large values. The
+            naive choice — use the observed min and max — forces your 256 codes to cover the whole tail,
+            and the bulk, where 99% of values live, gets squeezed into a few dozen codes. The alternative
+            is to <em>clip</em>: declare values above some threshold t all equal to t, and spend the codes
+            on the bulk instead. Clipping the tail is an error; starving the bulk is also an error.
+            Where's the optimum?
+          </p>
+          <p>
+            I built a synthetic activation tensor with exactly that shape — 99% of its mass on [0, 4], a
+            smooth tail decaying out to ~29 — and ran three calibrators over it. Same tensor, same 256
+            codes, three different ranges:
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/int8-quantization/calibration.png" alt="Left: histogram of a heavy-tailed activation tensor with three candidate quantization ranges marked. Right: error curves for full MSE, bulk-99 MSE, and KL divergence versus clip threshold, each minimized at a different threshold." />
+            <figcaption>How to read this: left panel is the value distribution (log density — the tail is real but thin). The vertical lines are the ranges the three methods chose. Right panel: each curve is one error metric plotted against the chosen clip threshold; the markers show where each metric is minimized — three different spots.</figcaption>
+          </figure>
+
+          <p>The three objectives disagree, and each is right about something:</p>
+          <ul>
+            <li><strong>Full mean-squared error picks min–max (threshold 28.9).</strong> This surprised me the first time I computed it, and it's worth sitting on: squared error weights a rare far-outlier by its <em>squared</em> distance, so plain L2 always votes to keep the tail. But the bulk pays: at this range, values in [0, 4] get only 4/29 × 255 ≈ <strong>35 distinct codes</strong>.</li>
+            <li><strong>Bulk-99 MSE picks the 99th percentile (9.1).</strong> Measure error only where the mass lives, and the optimum snaps to the P99 boundary. This is percentile calibration, derived rather than configured.</li>
+            <li><strong>KL divergence — entropy calibration — picks 7.0.</strong> Instead of averaging squared errors, minimize how much the <em>distribution</em> of quantized values diverges from the original (1024-bin histograms here; TensorRT's entropy calibrator is this objective). It lands just past the bulk edge: ~4× more codes for the 99% than min–max gives.</li>
+          </ul>
+          <p>
+            The takeaway I carry into production: <strong>your calibrator is a statement about which errors
+            you tolerate</strong>. Our visual quality tracked distribution shape, not MSE — entropy
+            calibration won. A control system tracking small deltas might reasonably vote the other way.
+            "Which calibrator and why" should be answered from experiment, not from the default config.
+          </p>
+
+          <h2>3. Weights: the per-channel trick</h2>
+          <p>
+            Activations are dynamic, so you calibrate. Weights are static, so you can do something better:
+            give <em>each output channel its own scale</em>. (A convolution's weight tensor is a stack of
+            filters — one per output channel — and channels are independent for this purpose.)
+          </p>
+          <p>
+            Why it matters: in any trained conv layer, filter magnitudes differ wildly — my synthetic
+            replicate shows an <strong>11.8× spread</strong> between the calmest and loudest channel. One
+            shared scale forces every channel to live inside the largest channel's range; the quiet
+            channels quantize on a grid sized for someone else.
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/int8-quantization/per_channel.png" alt="Left: bar chart of per-channel max absolute weight for 48 output channels, spanning roughly 12x in magnitude. Right: SQNR bars comparing per-tensor (36.6 dB) and per-channel (42.7 dB) INT8 quantization." />
+            <figcaption>How to read this: left, the per-channel weight magnitudes after sorting — the spread is the disease. Right, the cure measured: signal-to-quantization-noise ratio (SQNR, in decibels — higher is cleaner) for one shared scale vs one scale per channel. Same bits, +6.1 dB.</figcaption>
+          </figure>
+
+          <p>
+            +6 dB is a factor of ~2 in RMS error, at zero latency cost — per-channel scales are build-time
+            constants folded into the kernel's output stage. And this is why "we tried INT8 and it broke"
+            almost always means one of: min–max calibration on a skewed tensor, per-tensor weights, or
+            both. The bits are rarely the problem; the range is.
+          </p>
+
+          <h2>What this bought in production</h2>
+          <table>
+            <thead><tr><th>Precision</th><th>Size</th><th>Throughput</th><th>Cost</th></tr></thead>
+            <tbody>
+              <tr><td>FP32</td><td>4 B / weight</td><td>baseline</td><td>none — the reference</td></tr>
+              <tr><td>FP16</td><td>2 B / weight</td><td>~2×</td><td>free — no calibration needed</td></tr>
+              <tr><td>INT8</td><td>1 B / weight</td><td>~2× + 4× memory</td><td>calibration + per-channel scales</td></tr>
+            </tbody>
+          </table>
+          <p>
+            On the AIMAG serving stack, entropy calibration + per-channel weights + an INT8/FP16 mix is
+            where <strong>600+ FPS on an RTX 4090, a 70% latency cut, 35% lower VRAM, and &lt;5% quality
+            loss</strong> came from. The "&lt;5%" is doing real work in that sentence — it's a measured
+            perceptual comparison on clinical-style imagery, and it's the number that made sign-off
+            possible.
+          </p>
+          <p>
+            Closing the loop honestly: if calibration can't find a range that works, the next tool is
+            <em>quantization-aware training</em> — simulate the quantization during fine-tuning so the
+            network learns weights that are happy on the integer grid. We didn't need it. Knowing it
+            exists, and when to reach for it, is the difference between using a tool and understanding one.
+          </p>
+
+          <h2>If you remember three things</h2>
+          <ol>
+            <li>The quantizer is an affine map with a <strong>provable s/2 error bound</strong> — "is 8 bits enough" is a one-line comparison, not a vibe.</li>
+            <li><strong>Calibration is an objective choice</strong>: L2 keeps tails, entropy feeds bulks. Pick the error you'd rather tolerate.</li>
+            <li><strong>Per-channel weight scales are free quality</strong> — +6 dB in the experiment here.</li>
+          </ol>
+
+          <h2>Reproduce</h2>
+          <p>
+            The five-stage pipeline — PyTorch → ONNX → TensorRT → C++ — one notebook per stage, is
+            <a href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener">on GitHub</a>.
+            The calibration and per-channel experiments are ~40 lines of NumPy: sample a heavy-tailed
+            tensor, sweep clip thresholds, compute full-MSE / bulk-99-MSE / KL per threshold. If your three
+            objectives agree, your activations have no tail — re-check with real data.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="image-search-geometry.html">Next: image search is geometry →</a>
+            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener">Repo on GitHub</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#work">How it ships: the AIMAG case study</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=3"></script>
+</body>
+</html>

@@ -14,7 +14,7 @@ window.SITE_DATA = {
       href: "projects/aimag.html",
       tag: "Computer Vision · Medical AI",
       blurb:
-        "X-ray super-resolution and denoising shipped end-to-end — model R&D, INT8/FP16 quantization, TensorRT/C++ serving, and the QCA pipeline cardiologists use in live procedures.",
+        "X-ray super-resolution and denoising, owned end-to-end — model R&D, INT8/FP16 quantization, TensorRT/C++ serving, and the QCA pipeline cardiologists use in live procedures.",
       kpis: [
         { v: "$200K+", l: "ARR" },
         { v: "600+", l: "FPS" },
@@ -28,7 +28,7 @@ window.SITE_DATA = {
       href: "projects/adaptive-rag.html",
       tag: "LLMs · Retrieval · Production",
       blurb:
-        "The retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth.",
+        "Built the retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth.",
       kpis: [
         { v: "0.95", l: "Recall@5" },
         { v: "0.8s", l: "p50 latency" },
@@ -45,19 +45,71 @@ window.SITE_DATA = {
       href: "posts/inference-lab.html",
       tag: "Part 1",
       date: "Aug 2026",
-      dek: "mlx-lm vs llama.cpp under one fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
+      dek: "mlx-lm vs llama.cpp under 1 fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
     },
     {
       title: "3× the memory bought me 9%.",
       href: "posts/inference-lab-2.html",
       tag: "Part 2",
       date: "Aug 2026",
-      dek: "K process-isolated instances behind one queue: +9% for 3× the RAM. The arithmetic says why — one instance already saturates the M4 Pro's memory bus."
+      dek: "K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus."
+    },
+    {
+      title: "256 levels is plenty. Here's the math that proves it.",
+      href: "posts/int8-quantization.html",
+      tag: "Inference",
+      date: "Aug 2026",
+      dek: "What INT8 quantization is and why it barely hurts — the affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB."
+    },
+    {
+      title: "Image search is geometry before it is learning.",
+      href: "posts/image-search-geometry.html",
+      tag: "Retrieval",
+      date: "Aug 2026",
+      dek: "How search-by-image works, from zero: the cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and the arithmetic that decides when exact search dies."
+    },
+    {
+      title: "99.6% accuracy, completely useless.",
+      href: "posts/dice-imbalance.html",
+      tag: "Medical CV",
+      date: "Aug 2026",
+      dek: "In medical segmentation the target — a coronary vessel — is 0.39% of the pixels, and the standard loss trains a model that's great at everything else. Derived, then fixed with Dice."
+    },
+    {
+      title: "The Gram matrix doesn't care where anything is.",
+      href: "posts/gram-matrix.html",
+      tag: "Deep Learning",
+      date: "Aug 2026",
+      dek: "Style transfer explained from zero — and its key object provably discards all position information (measured: 1.7e-18). Plus the receptive-field arithmetic behind the layer choices."
+    },
+    {
+      title: "A file manager that understands your files — entirely offline.",
+      href: "posts/ipic-architecture.html",
+      tag: "Systems",
+      date: "Aug 2026",
+      dek: "ipic's architecture tour: one background pipeline indexes a disk for meaning — whisper for speech, i8 vectors in an mmap, crash-safe by design. No cloud, no API calls."
+    },
+    {
+      title: "Three retrieval lanes, one formula to fuse them.",
+      href: "posts/ipic-hybrid-search.html",
+      tag: "Retrieval",
+      date: "Aug 2026",
+      dek: "Semantic search misses exact strings; keyword search misses meaning. ipic runs both plus filenames and fuses them with weighted reciprocal rank fusion — derived, computed, running in 4 ms."
     }
   ],
 
   /* Image-led showcase. The point: real inputs, real outputs. */
   lab: [
+    {
+      title: "ipic — a file manager that understands your files",
+      repo: "ipic",
+      hook:
+        "Fully on-device RAG over your whole disk: type or speak a query, get ranked results across text, PDFs, audio and video. Rust, local whisper transcription, i8-quantized vectors — no cloud, ever.",
+      img: "assets/img/posts/ipic-architecture/card.png",
+      alt: "Simplified card diagram of ipic: your disk indexed locally with whisper, embeddings and FTS5; one typed or spoken query answered by three retrieval lanes fused with RRF",
+      href: "https://github.com/anubhavagr/ipic",
+      chips: ["Rust", "Hybrid RAG", "Whisper", "SQLite FTS5", "ONNX"]
+    },
     {
       title: "Colorizing black-and-white photography",
       repo: "no_more_BWs",
@@ -79,10 +131,10 @@ window.SITE_DATA = {
       chips: ["PyTorch", "Gatys 2015", "VGG", "Gram loss"]
     },
     {
-      title: "Stitching N photos into one wide view",
+      title: "Stitching N photos into 1 wide view",
       repo: "Panorama-image-stitching",
       hook:
-        "Feature matching → homography → warping → blending, end to end on OpenCV. Three overlapping frames fused into one 3815-px panorama.",
+        "Feature matching → homography → warping → blending, end to end on OpenCV. 3 overlapping frames fused into a 3815-px panorama.",
       img: "assets/img/projects/panorama.png",
       alt: "Wide panorama stitched from three overlapping photographs",
       href: "https://github.com/anubhavagr/Panorama-image-stitching",
@@ -119,7 +171,7 @@ window.SITE_DATA = {
     {
       name: "pytorch-cpp-tensorrt",
       desc:
-        "PyTorch → ONNX → TensorRT → C++ walkthrough, one notebook per stage. The pattern I use in production.",
+        "PyTorch → ONNX → TensorRT → C++ walkthrough, 1 notebook per stage. The pattern I use in production.",
       href: "https://github.com/anubhavagr/pytorch-cpp-tensorrt",
       note: "5-stage pipeline",
       chips: ["TensorRT", "ONNX", "C++", "Deployment"]

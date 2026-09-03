@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Three retrieval lanes, one formula to fuse them · Anubhav Agrawal</title>
+  <meta name="description" content="Why one search signal is never enough, and the weighted reciprocal-rank fusion ipic computes in single-digit milliseconds — derived from requirements, demonstrated on a computed example, and connected to production RAG." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All posts
+          </a>
+          <span class="card__tag">Retrieval · Rust</span>
+          <h1 style="margin-top:.8rem;">Three retrieval lanes, one formula to fuse them.</h1>
+          <p class="sub">ipic's search box doesn't know what kind of query is coming — a meaning, an exact identifier, or a half-remembered filename. So it runs three retrievers at once and fuses their rankings with one line of math. This post derives that line, demonstrates it on a computed example, and shows why the same design shows up in production RAG systems.</p>
+
+          <div class="article__meta">
+            <div><b>Lanes</b><span>dense · BM25 · filename</span></div>
+            <div><b>Fusion</b><span>weighted RRF · k = 60</span></div>
+            <div><b>Cost</b><span>single-digit ms, local</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/ipic</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              Every retrieval signal fails differently: <strong>semantic search</strong> misses exact
+              strings it has never seen, <strong>keyword search</strong> misses meaning phrased
+              differently, <strong>filename search</strong> is trivial but sparse. Instead of picking,
+              ipic runs all three and fuses their <em>rankings</em> — not their scores — with weighted
+              reciprocal rank fusion: <strong>score(d) = Σ w<sub>lane</sub> / (k + rank)</strong>. The
+              formula is one line, derived here from four requirements, and the computed example shows the
+              payoff: <strong>a document the semantic lane buried at rank 8 rises to fused rank 3 because
+              it was the keyword lane's #1</strong>.
+            </p>
+          </div>
+
+          <h2>What this post is about</h2>
+          <p>
+            Search feels like one problem but is at least three. Consider looking for things on your own
+            disk:
+          </p>
+          <ul>
+            <li>"<em>the lecture where she explains radiation shielding</em>" — a <strong>meaning</strong>. No keyword matches; you need semantic search: text converted to vectors, query converted to a vector, nearest neighbors.</li>
+            <li>"<em>q3_roadmap_final_v2</em>" — an <strong>exact string</strong>. Semantic vectors are fuzzy precisely where you need zero fuzz; keyword search nails it.</li>
+            <li>"<em>that invoice… something with may</em>" — a <strong>filename fragment</strong>. The file's <em>name</em> is the signal; its content is irrelevant.</li>
+          </ul>
+          <p>
+            No single retriever wins all three races. The engineering question is: <strong>when three
+            retrievers each return a ranking of the same documents, how do you make one ranking out of
+            them?</strong> This post:
+          </p>
+          <ol>
+            <li>derives the fusion formula ipic uses from the requirements any fusion must satisfy;</li>
+            <li>demonstrates it on a computed example (including the rescue effect above);</li>
+            <li>explains the two knob families — the constant k and the lane weights — and what ipic sets them to, and why;</li>
+            <li>briefly covers the bonus lane: matching a <em>spoken</em> query directly against indexed audio.</li>
+          </ol>
+          <p>
+            Prerequisites: none beyond "a ranking is an ordered list." If you want the vector-matching
+            background first, my
+            <a href="image-search-geometry.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">image-search post</a>
+            covers embeddings and why cosine ≡ L2 after normalization.
+          </p>
+
+          <h2>The project behind it</h2>
+          <p>
+            <a href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">ipic</a> is my
+            open-source, fully on-device file manager with RAG search (the
+            <a href="ipic-architecture.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">architecture post</a>
+            covers the indexing side). Its search box deliberately has no mode switcher: you type one
+            query, all three lanes run in parallel, and fusion decides. That constraint — <em>one box,
+            any intent</em> — is what makes fusion the heart of the system rather than a nice-to-have.
+          </p>
+
+          <h2>The vocabulary you'll need</h2>
+          <ul>
+            <li><strong>Ranking / rank:</strong> an ordered list of documents, and a document's position in it (rank 1 = best). Fusion combines rankings.</li>
+            <li><strong>Dense lane (semantic):</strong> embedding model (local bge-small, 384-d) turns each chunk and the query into vectors; ranking by dot product (equivalently cosine — the two-line proof is in the image-search post). Finds meaning, misses unseen exact strings.</li>
+            <li><strong>Keyword lane (BM25):</strong> the classic ranking formula behind SQLite FTS5 — roughly, terms that are frequent in a document but rare across the corpus score high. Finds exact tokens, deaf to phrasing and synonyms.</li>
+            <li><strong>Filename lane:</strong> substring/fuzzy match on names and paths. Trivial, unbeatable when it applies, useless otherwise.</li>
+            <li><strong>Score vs rank:</strong> a lane's raw scores (a dot product, a BM25 value, a match ratio) live on incommensurable scales. This distinction drives the whole derivation below.</li>
+          </ul>
+
+          <h2>Deriving the formula from requirements</h2>
+          <p>
+            Suppose the three lanes each hand you a ranking of the same corpus. What does a fusion
+            function need to satisfy?
+          </p>
+          <ol>
+            <li><strong>Never compare raw scores across lanes.</strong> A BM25 score of 11.3 and a cosine of 0.31 say nothing about each other. Only positions — ranks — are comparable.</li>
+            <li><strong>Monotone:</strong> better rank in any lane must never hurt the fused score.</li>
+            <li><strong>Bounded contributions:</strong> a lane's influence should taper — rank 1 should matter more than rank 2, but not infinitely more; and a document absent from a lane (rank → ∞) should contribute nothing rather than garbage.</li>
+            <li><strong>Weightable:</strong> I must be able to express trust — semantic usually matters more than filename.</li>
+          </ol>
+          <p>
+            The simplest function satisfying all four is the reciprocal of rank-plus-constant, summed with
+            weights. That's <strong>reciprocal rank fusion</strong> (Cormack et al., 2009):
+          </p>
+          <blockquote>
+            RRF<sub>k</sub>(d) = Σ<sub>lane ∈ lanes</sub> w<sub>lane</sub> · 1 / (k + rank<sub>lane</sub>(d))
+          </blockquote>
+          <p>
+            Check the requirements: it reads only ranks (1); each term decreases as rank grows (2); it's
+            bounded between 0 and w/k, and a missing document's term vanishes as rank → ∞ (3); weights are
+            right there (4). In ipic the sum is over the three lanes with
+            <strong>w = (1.0, 0.7, 0.5)</strong> — dense, keyword, filename — and each document's
+            contribution uses its <em>best</em> rank per lane (a chunk appears once per lane regardless of
+            how many times it matches).
+          </p>
+
+          <h2>The computed example</h2>
+          <p>
+            Six documents, two lanes (filename omitted for clarity), rankings chosen to disagree the way
+            real lanes do. With k = 60, w<sub>dense</sub> = 1.0, w<sub>keyword</sub> = 0.7:
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/ipic-hybrid-search/rrf_fusion.png" alt="Left: horizontal bars of fused reciprocal rank fusion scores for six documents, annotated with their per-lane ranks, with an exact-match document highlighted. Right: curves of points contributed versus rank for several values of the constant k." />
+            <figcaption>How to read this: left — six documents sorted by fused score (computed, not sketched); the label after each bar shows the document's rank in each lane. The accent bar is D4: rank 8 in the semantic lane, rank 1 in keyword — fusing to 3rd overall, ahead of D3 which semantically ranked 3rd. Right — the kernel 1/(k + r) itself: small k makes fusion winner-take-most, large k flattens differences. k = 60 is the literature's empirically robust middle.</figcaption>
+          </figure>
+
+          <p>
+            The rescue is the whole story. You searched for something containing an exact identifier; the
+            semantic lane — which has never seen that identifier in training-strength contexts — ranked
+            the right document 8th. The keyword lane ranked it 1st. Fusion doesn't average their opinions,
+            it <em>sums evidence</em>: 1/(60+8) + 0.7/(60+1) = 0.0262, enough to jump the semantically
+            plausible but keyword-silent D3 (rank 3 semantic, rank 15 keyword → 0.0252). One query box,
+            two intents, both served.
+          </p>
+
+          <h2>The knobs: k and the weights</h2>
+          <p>
+            <strong>k</strong> controls how top-heavy the fusion is (right panel). At k = 1, a rank-1 hit
+            contributes 26× what rank-26 does — fusion becomes near-winner-take-all, and any single lane's
+            champion dominates. At k = 600, ranks 1 and 26 differ by only 4% — fusion degenerates toward
+            "count which lanes listed you." The original RRF paper found <strong>k = 60</strong> robust
+            across tasks, and ipic ships it unchanged: a rank-1 hit is worth ~2.6× a rank-100 hit, strong
+            but not tyrannical.
+          </p>
+          <p>
+            <strong>The weights</strong> (1.0 / 0.7 / 0.5) express measured trust: dense retrieval answers
+            the majority of natural-language queries best; BM25 is the safety net for exact strings;
+            filename is the tiebreaker. In the spirit of this site's other posts: these are a sensible
+            prior plus hands-on tuning on my own disk, not a hyperparameter study — and that's typical of
+            shipped fusion weights. The saving grace is that RRF is <em>not very sensitive</em> to them
+            (try perturbing the example by ±0.1 and watch the order barely move) — which is itself a
+            consequence of requirement 3's taper.
+          </p>
+
+          <h2>The bonus lane: query by voice, match by sound</h2>
+          <p>
+            A spoken query gets transcribed locally (whisper) and runs the same three lanes over the
+            transcript. But ipic also matches the <em>audio itself</em> against indexed recordings: every
+            audio/video file gets an <strong>acoustic fingerprint</strong> — a 128-number vector built
+            from FFT analysis, where the first 64 numbers describe spectral shape (mean log-energy per
+            frequency band) and the next 64 describe temporal dynamics (frame-to-frame <em>flux</em> — how
+            violently the spectrum changes). Two versions of the same recording, even re-encoded, land
+            close in that space; a cosine over 128 dimensions costs microseconds. This is "find me that
+            talk again," not "find music that <em>feels</em> like this" — the honest limit is documented,
+            not hidden.
+          </p>
+
+          <h2>Same design, different scale</h2>
+          <p>
+            This is not a toy pattern. The production RAG system I run at
+            <a href="../projects/adaptive-rag.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Griphic</a>
+            — 10K+ documents, 500+ concurrent users — uses the same philosophy: hybrid keyword + dense
+            retrieval, because production queries contain <em>both</em> intents, plus a cross-encoder
+            re-ranker where ipic's fuse step sits (at 500 users you can afford a neural re-ranker; at 4 ms
+            and zero cloud, RRF is the right weight class). ipic is where that design instinct got
+            stress-tested from scratch, in a language I wanted to learn, under constraints (offline,
+            low-RAM, milliseconds) that force every abstraction to earn its place.
+          </p>
+
+          <h2>Reproduce</h2>
+          <pre><code>git clone https://github.com/anubhavagr/ipic
+cd ipic && cargo build --release
+./target/release/ipic-cli scan
+./target/release/ipic-cli search "radiation shielding on mars"</code></pre>
+          <p>
+            The fusion table in the figure recomputes in five lines of anything:
+            <code>score = 1.0/(60+sem_rank) + 0.7/(60+kw_rank)</code>. Change k to 1, then to 600, and
+            watch the ordering — that exercise teaches more about RRF than any diagram.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="ipic-architecture.html">Part 1: the architecture →</a>
+            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">Repo on GitHub</a>
+            <a class="btn btn--ghost btn--sm" href="image-search-geometry.html">Related: image search is geometry</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=3"></script>
+</body>
+</html>

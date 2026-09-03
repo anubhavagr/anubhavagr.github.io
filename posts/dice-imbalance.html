@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>99.6% accuracy, completely useless. · Anubhav Agrawal</title>
+  <meta name="description" content="Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error." />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All posts
+          </a>
+          <span class="card__tag">Medical CV · Losses</span>
+          <h1 style="margin-top:.8rem;">99.6% accuracy, completely useless.</h1>
+          <p class="sub">Teaching a network to outline coronary arteries in X-ray video taught me how a loss function can quietly starve the very thing you're trying to detect. The full derivation — why cross-entropy fails at 1:255 imbalance, why Dice doesn't, and why thin vessels punish every single pixel of boundary error.</p>
+
+          <div class="article__meta">
+            <div><b>Task</b><span>Coronary segmentation</span></div>
+            <div><b>Architecture</b><span>U-Net · ResNet34</span></div>
+            <div><b>In production</b><span>0.94 Dice · QCA &lt; 4 s</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/ArterySeg" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/ArterySeg</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              In medical image segmentation, the thing you're looking for — a vessel, a lesion, a tool — is
+              often a fraction of a percent of the pixels. That asymmetry poisons the standard training
+              recipe: <strong>cross-entropy spends 99.6% of its gradient on background</strong> at the
+              imbalance in this post, and I derive that, not assert it. The <strong>Dice loss</strong>
+              self-normalizes and provably optimizes the other way — but overshoots. The working recipe is
+              <strong>both losses together</strong>. And for thin structures, one law governs everything:
+              <strong>Dice = w / (w + δ)</strong> — a 1-pixel boundary error on a 2-pixel vessel costs 33
+              points.
+            </p>
+          </div>
+
+          <h2>What this post is about</h2>
+          <p>
+            <strong>Semantic segmentation</strong> is pixel-level classification: instead of "this image
+            contains a cat," the network outputs a mask labeling <em>every</em> pixel — cat / not-cat. It's
+            how machines outline organs in scans, roads in maps, defects in factory photos.
+          </p>
+          <p>
+            My application is interventional cardiology: outline the <strong>coronary arteries</strong> in
+            X-ray fluoroscopy (live video of a beating heart, shot during procedures). The downstream
+            product, <strong>QCA</strong> — quantitative coronary analysis — measures how narrow a vessel
+            has become and turns that into stenosis numbers a cardiologist acts on. None of it works
+            without a clean vessel mask.
+          </p>
+          <p>
+            Here's the trap. A coronary artery is a <em>thin</em> structure — 2 pixels wide, much of the
+            time — in a 512 × 512 frame. This post is the complete story of what that one fact does to
+            training, organized as three questions:
+          </p>
+          <ol>
+            <li><strong>Why does the standard loss (cross-entropy) ignore the vessel?</strong> — gradient arithmetic, derived.</li>
+            <li><strong>Why does the Dice loss fix it?</strong> — the Dice coefficient and its gradient, derived.</li>
+            <li><strong>Why is "thin" special, even with the right loss?</strong> — one closed-form law of boundary error.</li>
+          </ol>
+          <p>
+            Prerequisites: you should know that neural networks train by descending a gradient of a loss
+            function. I'll re-derive the little probability and calculus we need as we go.
+          </p>
+
+          <h2>The project behind it</h2>
+          <p>
+            <a href="https://github.com/anubhavagr/ArterySeg" target="_blank" rel="noopener">ArterySeg</a>
+            is my open-source coronary segmentation project: a U-Net (the standard segmentation
+            architecture: an encoder that shrinks the image while learning features, a decoder that grows a
+            mask back up, with skip connections between them) built on a ResNet34 backbone, with a custom
+            Sobel edge-enhancement input stage and spatial attention. Its production descendant — U-Net++
+            over a ResNet encoder — runs in the QCA pipeline at work and reaches <strong>0.94 Dice</strong>
+            (Dice defined below; it's the 0-to-1 overlap score where 0.94 is very good). The loss design in
+            this post is the part I got wrong first and understand best now.
+          </p>
+
+          <h2>The vocabulary you'll need</h2>
+          <ul>
+            <li><strong>Ground-truth mask:</strong> the reference segmentation — a binary image where vessel pixels are 1, everything else 0. Produced by expert annotation (or, in training data, by careful post-processing).</li>
+            <li><strong>Prediction:</strong> the network outputs, for every pixel, a probability p ∈ [0, 1] that it belongs to the vessel.</li>
+            <li><strong>Cross-entropy (CE):</strong> the default loss for probabilistic classification. For one pixel with label y ∈ {0, 1} and predicted probability p: L = −[y·log p + (1−y)·log(1−p)]. Penalizes confident-wrong predictions heavily; rewards correct confidence gently. Sum it over all pixels for a training example.</li>
+            <li><strong>Pixel accuracy:</strong> fraction of pixels whose argmax class is right. Sounds reasonable; see title.</li>
+            <li><strong>Dice coefficient:</strong> an overlap score between two sets, 2|A ∩ B| / (|A| + |B|) — "twice the shared area over the total area." 1 = perfect overlap, 0 = none. It's the F1 score wearing a geometry costume.</li>
+          </ul>
+
+          <h2>Set the stage with arithmetic</h2>
+          <p>
+            Before any calculus: how big is the thing we're segmenting? Take a 512 × 512 fluoroscopy frame
+            — 262,144 pixels. A coronary artery crossing that frame at 2 pixels wide contributes 2 × 512 =
+            1,024 pixels. So the <strong>foreground fraction is π = 0.39%</strong>, an imbalance of roughly
+            255 : 1.
+          </p>
+          <p>
+            Now the title makes itself: a "model" that outputs <em>solid black</em> — no vessels, ever, on
+            any input — scores <strong>99.61% pixel accuracy</strong>. A completely useless predictor with
+            a report-card number most classifiers would envy. Delete pixel accuracy from your vocabulary
+            for this domain; we'll use Dice.
+          </p>
+
+          <h2>Question 1: where cross-entropy's gradient goes</h2>
+          <p>
+            Networks learn by following the gradient of the loss — the aggregate pull over all pixels. So
+            the honest question isn't "is CE a good loss," it's <strong>"when you sum its gradient over an
+            imbalanced image, which class wins the tug-of-war?"</strong>
+          </p>
+          <p>
+            One derivative (chain rule through the sigmoid, the standard exercise): with z the pixel's
+            pre-sigmoid logit and p = σ(z),
+          </p>
+          <blockquote>
+            ∂L/∂z = p − y
+          </blockquote>
+          <p>
+            The gradient magnitude for a pixel of class y is |p − y| — <em>identical functional form for
+            foreground and background pixels</em>. The loss doesn't hate the vessel. But now count votes:
+            for every foreground pixel there are ~255 background pixels each pulling with the same shape.
+            The aggregate split is pure arithmetic:
+          </p>
+          <blockquote>
+            background share of the total gradient = 1 − π = <strong>99.61%</strong>
+          </blockquote>
+          <p>
+            Under any given prediction, 99.6% of the update signal is spent getting better at background.
+            The vessel learns last, from the smallest slice — and thin structures are exactly the ones
+            that can't survive a slow start.
+          </p>
+          <p>
+            There's a sharper way to see the failure, and it's the left panel of the figure below. Consider
+            the laziest possible model: it outputs the same probability q on <em>every</em> pixel — a
+            global bias, the direction an under-trained, class-starved network collapses along. What q
+            minimizes the loss? For CE, write the average loss over the image (this is just the two-class
+            expectation): L(q) = −[π log q + (1−π) log(1−q)]. Differentiate, set to zero, and the optimum
+            is:
+          </p>
+          <blockquote>
+            q* = π = 0.0039 — <strong>predict the class prior, pixel after pixel</strong>
+          </blockquote>
+          <p>
+            The loss's ideal lazy student reproduces the statistics of its imbalanced data and calls it a
+            day: every pixel gets "0.4% vessel" — calibrated mush. No confident vessel anywhere.
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/dice-imbalance/ce_vs_dice.png" alt="Left: two loss curves versus global bias, cross-entropy minimized at the class prior while 1 minus Dice is minimized at full commitment, showing opposite optima. Right: background share of cross-entropy gradient versus foreground fraction on a log axis, with the 0.39 percent vessel example marked." />
+            <figcaption>How to read this: the horizontal axis of both panels is a knob — the probability the model assigns everywhere. Left: the two losses, each normalized so its minimum sits at zero. Cross-entropy (gray) bottoms out at q = π: "predict the prior." 1 − Dice (accent) bottoms out at q = 1: "predict vessel everywhere." Opposite degenerate optima, both curves computed in closed form. Right: the gradient-budget split (vertical) as the foreground fraction varies (horizontal, log scale); the 2-px vessel sits at the far left.</figcaption>
+          </figure>
+
+          <h2>Question 2: what Dice changes, and what it doesn't</h2>
+          <p>
+            The Dice coefficient from our vocabulary list measures overlap — and it's <em>immune to the
+            imbalance trick</em> by construction: a prediction can't inflate its Dice by being big, because
+            the denominator counts the prediction's own size. To train on it, make it differentiable:
+            swap the hard sets for the soft predictions (p<sub>i</sub> against labels g<sub>i</sub>, summed
+            over all N pixels):
+          </p>
+          <blockquote>
+            D = 2 Σᵢ pᵢgᵢ / (Σᵢ pᵢ + Σᵢ gᵢ),&nbsp;&nbsp; loss = 1 − D
+          </blockquote>
+          <p>
+            What does its gradient look like? Differentiate (quotient rule — writing P = Σp, G = Σg,
+            I = Σpg):
+          </p>
+          <blockquote>
+            ∂D/∂p<sub>i</sub> = 2 [ g<sub>i</sub>(P + G) − I ] / (P + G)²
+          </blockquote>
+          <p>
+            Stare at the denominator: <strong>the gradient is divided by the total mask size P + G</strong>.
+            Whether the foreground is 40% of the image or 0.4%, the gradient scale is normalized — Dice
+            pays each class the same budget, which is precisely what CE refused to do. And in the left
+            panel's lazy-model test, Dice's optimum is the <em>opposite</em> corner: q* = 1, everything
+            foreground. Perfect — it means Dice cannot be satisfied by mush. But it <em>can</em> be
+            oversatisfied in the other direction early in training, when predictions are near-empty and
+            the gradient (with I ≈ 0) is sparse and jittery: the classic cold-start problem of pure-Dice
+            training.
+          </p>
+          <p>
+            Which is why the working recipe — in ArterySeg and in the production QCA stack — is
+            <strong>L = Dice + BCE</strong>, roughly 1:1. BCE contributes dense, stable gradients from
+            step one; Dice contributes the frequency normalization and the commitment pressure; and each
+            one's degenerate optimum (predict-the-prior vs. predict-everything) is cancelled by the
+            other's. It's not a hack; it's the two failure modes of the figure neutralizing each other.
+          </p>
+
+          <h2>Question 3: the law of thin structures</h2>
+          <p>
+            Suppose the loss is now right and the model is good. Thin vessels have one more trap left, and
+            it's pure geometry. Say the prediction is <em>perfect except its boundary sits δ pixels too
+            wide on each side</em>. For a straight vessel of width w, the intersection keeps w·H of the
+            pixels, the prediction covers (w + 2δ)·H, and Dice becomes a one-liner:
+          </p>
+          <blockquote>
+            Dice = 2w / (2w + 2δ) = w / (w + δ)
+          </blockquote>
+          <p>
+            Plug in reality: w = 2, δ = 1 → Dice = 2/3. <strong>A third of the score, gone to a single
+            pixel of boundary error</strong> — an error smaller than the annotation noise of the
+            ground-truth masks themselves. A blob the size of a lung shrugs off the same 1-pixel error;
+            a coronary artery never gets to.
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/dice-imbalance/boundary_sensitivity.png" alt="Left: Dice versus boundary error in pixels for vessel widths 2, 4, 8, and 16, all decaying steeply with thinner vessels decaying fastest. Right: Dice dropping sharply while pixel accuracy stays nearly flat for the same boundary errors." />
+            <figcaption>How to read this: horizontal axis is the boundary error δ in pixels; vertical is the score. Left: the w/(w+δ) law for four vessel widths — the 2-px curve falls off a cliff while the 16-px one barely slopes. Right: the same errors plotted against pixel accuracy (gray, nearly flat at ~99%) — the metric that would have told you nothing happened.</figcaption>
+          </figure>
+
+          <p>
+            This law is the argument for spending <em>architecture</em> on boundaries. It's why ArterySeg
+            feeds the network a Sobel-edge-enhanced input (Sobel = a classic 3×3 filter that responds to
+            intensity edges — making boundary evidence explicit instead of hoping the encoder discovers
+            it) and gates skip connections with spatial attention (amplifying exactly the feature maps
+            where vessels contrast against background). The loss can only reward sharp boundaries if the
+            network can see them.
+          </p>
+
+          <h2>The checklist I actually use</h2>
+          <ol>
+            <li><strong>Report Dice (and IoU), never pixel accuracy.</strong> If asked for accuracy, show the solid-black model's 99.61% and change the subject.</li>
+            <li><strong>Start from Dice + BCE, 1:1.</strong> Their two degenerate optima cancel; BCE provides the dense early gradients Dice lacks.</li>
+            <li><strong>Sanity-check with w/(w+δ).</strong> Know your structure's width in pixels and what 1 pixel of error costs, before blaming the model for a "low" Dice.</li>
+            <li><strong>Spend architecture on boundaries</strong> — edge priors, attention at skip connections. For thin structures, the boundary <em>is</em> the object.</li>
+          </ol>
+
+          <h2>Reproduce</h2>
+          <pre><code>git clone https://github.com/anubhavagr/ArterySeg
+cd ArterySeg
+conda env create -f pytorch-env.yml &amp;&amp; conda activate pytorch-env
+
+python main.py                  # train the U-Net / ResNet34 variant (Dice + BCE in hybrid_loss.py)
+python export_and_benchmark.py  # export to TensorRT, benchmark vs the PyTorch baseline</code></pre>
+          <p>
+            Every curve in the figures is closed-form — CE(q), D(q), and w/(w+δ) as written above. The
+            w/(w+δ) one is worth recomputing by hand once; it has changed how I read every Dice number
+            since.
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--primary btn--sm" href="gram-matrix.html">Next: the Gram matrix doesn't care where anything is →</a>
+            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/ArterySeg" target="_blank" rel="noopener">Repo on GitHub</a>
+            <a class="btn btn--ghost btn--sm" href="../projects/aimag.html">Where it ships: the AIMAG case study</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=3"></script>
+</body>
+</html>
