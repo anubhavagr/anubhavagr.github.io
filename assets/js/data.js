@@ -59,33 +59,57 @@ window.SITE_DATA = {
       href: "posts/int8-quantization.html",
       tag: "Inference",
       date: "Aug 2026",
-      dek: "INT8 derived from scratch: the affine map, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB."
+      dek: "What INT8 quantization is and why it barely hurts — the affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB."
     },
     {
       title: "Image search is geometry before it is learning.",
       href: "posts/image-search-geometry.html",
       tag: "Retrieval",
       date: "Aug 2026",
-      dek: "The cosine/L2 equivalence is a two-line proof, P 1.00 / R 0.87 is a diagnosis, and the exact-search wall is arithmetic — across 5 CNN backbones on FAISS."
+      dek: "How search-by-image works, from zero: the cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and the arithmetic that decides when exact search dies."
     },
     {
       title: "99.6% accuracy, completely useless.",
       href: "posts/dice-imbalance.html",
       tag: "Medical CV",
       date: "Aug 2026",
-      dek: "A 2-px vessel is 0.39% of an X-ray frame. Why cross-entropy starves it — derived — and the geometry of Dice that doesn't. A 1-px boundary error costs 33 Dice points."
+      dek: "In medical segmentation the target — a coronary vessel — is 0.39% of the pixels, and the standard loss trains a model that's great at everything else. Derived, then fixed with Dice."
     },
     {
       title: "The Gram matrix doesn't care where anything is.",
       href: "posts/gram-matrix.html",
       tag: "Deep Learning",
       date: "Aug 2026",
-      dek: "Shuffle every feature position and G moves by 1.7e-18 — measured. What that invariance buys in style transfer, plus the receptive-field arithmetic that picks the layers."
+      dek: "Style transfer explained from zero — and its key object provably discards all position information (measured: 1.7e-18). Plus the receptive-field arithmetic behind the layer choices."
+    },
+    {
+      title: "A file manager that understands your files — entirely offline.",
+      href: "posts/ipic-architecture.html",
+      tag: "Systems",
+      date: "Aug 2026",
+      dek: "ipic's architecture tour: one background pipeline indexes a disk for meaning — whisper for speech, i8 vectors in an mmap, crash-safe by design. No cloud, no API calls."
+    },
+    {
+      title: "Three retrieval lanes, one formula to fuse them.",
+      href: "posts/ipic-hybrid-search.html",
+      tag: "Retrieval",
+      date: "Aug 2026",
+      dek: "Semantic search misses exact strings; keyword search misses meaning. ipic runs both plus filenames and fuses them with weighted reciprocal rank fusion — derived, computed, running in 4 ms."
     }
   ],
 
   /* Image-led showcase. The point: real inputs, real outputs. */
   lab: [
+    {
+      title: "ipic — a file manager that understands your files",
+      repo: "ipic",
+      hook:
+        "Fully on-device RAG over your whole disk: type or speak a query, get ranked results across text, PDFs, audio and video. Rust, local whisper transcription, i8-quantized vectors — no cloud, ever.",
+      img: "assets/img/posts/ipic-architecture/card.png",
+      alt: "Simplified card diagram of ipic: your disk indexed locally with whisper, embeddings and FTS5; one typed or spoken query answered by three retrieval lanes fused with RRF",
+      href: "https://github.com/anubhavagr/ipic",
+      chips: ["Rust", "Hybrid RAG", "Whisper", "SQLite FTS5", "ONNX"]
+    },
     {
       title: "Colorizing black-and-white photography",
       repo: "no_more_BWs",
