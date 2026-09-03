@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Gram matrix doesn't care where anything is · Anubhav Agrawal</title>
-  <meta name="description" content="Shuffle every feature position and the Gram matrix doesn't move — measured at 1.7e-18. What that invariance buys in neural style transfer, the gradients derived, and the receptive-field arithmetic that picks the layers." />
+  <meta name="description" content="Neural style transfer explained from zero: what the Gatys method does, why the Gram matrix captures style, the permutation-invariance proof (measured at 1.7e-18), the gradients, and the receptive-field arithmetic behind the layer choices." />
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -40,7 +40,7 @@
           </a>
           <span class="card__tag">Deep Learning · Perception</span>
           <h1 style="margin-top:.8rem;">The Gram matrix doesn't care where anything is.</h1>
-          <p class="sub">Gatys' 2015 style-transfer paper hinges on one object: the Gram matrix of a CNN's feature maps. I reimplemented it from scratch and found the entire method makes sense the moment you see — algebraically, then measured — that the Gram matrix is a deliberate act of forgetting.</p>
+          <p class="sub">Neural style transfer — render a photo in a painting's brushwork — was born in 2015 from one clever use of a classification network's innards. I reimplemented it from scratch; this post explains the whole method from zero, including the one object that makes "style" mathematically distinct from "content."</p>
 
           <div class="article__meta">
             <div><b>Method</b><span>Gatys et al. 2015</span></div>
@@ -54,143 +54,215 @@
           <div class="callout">
             <div class="h">TL;DR</div>
             <p style="margin:0;">
-              Style transfer synthesizes an image by <strong>optimizing pixels against a frozen
-              network</strong> — the image is the parameter. Content is "where the features are"; style is
-              "which features co-occur." The Gram matrix G = FFᵀ enforces the second definition by
-              <strong>discarding all spatial information</strong> — provable by permutation invariance, and
-              I measured it: <strong>shuffle every position, G changes by 1.7 × 10⁻¹⁸</strong>. Layer
-              choice falls out of receptive-field arithmetic: <strong>3 px at conv1_1 → 196 px at
-              conv5_3</strong>.
+              Style transfer doesn't train a generator — it <strong>optimizes an image</strong> so that a
+              frozen classification network "sees" the content of one picture and the texture statistics of
+              another. The two signals are one line apart: content compares features <em>position by
+              position</em>; style compares the <strong>Gram matrix</strong> — feature co-occurrence with
+              all position information thrown away. That's provable (permutation invariance) and I measured
+              it: <strong>shuffle every position, G changes by 1.7 × 10⁻¹⁸</strong>. Layer choices follow
+              from receptive-field arithmetic: <strong>3 px of context at conv1_1, 196 px at conv5_3</strong>.
             </p>
           </div>
 
-          <h2>The inversion</h2>
+          <h2>What this post is about</h2>
           <p>
-            Most deep learning trains a network to fit an image. Gatys et al. (2015) froze the network and
-            fit an <em>image</em> to the network: start from noise, run VGG, compare feature statistics to
-            a content photo and a style painting, and backprop the difference <em>into the pixels</em>.
-            Every result in that paper — and in my reimplementation — comes from what you choose to compare.
+            <strong>Neural style transfer</strong> is the technique behind "photo of my house, painted like
+            Van Gogh": given a <em>content</em> image (the house) and a <em>style</em> image (the painting),
+            produce a new image that keeps the house's layout but the painting's look — brushstrokes,
+            palette, texture. The 2015 paper by Gatys and colleagues ("<a href="https://arxiv.org/abs/1508.06576" target="_blank" rel="noopener">A Neural Algorithm of Artistic Style</a>")
+            was the first to do it well, and its idea is still the cleanest introduction to a deep idea:
+            <strong>what a trained network responds to can be used as a definition of image content</strong>
+            — and, with one trick, of image style too.
           </p>
           <p>
-            For a layer ℓ with C channels and H·W positions, write the feature map as
-            F<sup>ℓ</sup> ∈ ℝ<sup>C×HW</sup>. Two comparisons define the entire method:
+            I reimplemented the method from scratch
+            (<a href="https://github.com/anubhavagr/neural-style-transfer" target="_blank" rel="noopener">repo here</a>)
+            because reading "we match Gram matrices of feature maps" is very different from knowing why
+            that means anything. This post builds the whole thing in order:
+          </p>
+          <ol>
+            <li>the method's strange inversion: <strong>the image is the parameter, the network is frozen</strong>;</li>
+            <li>the two losses — content and style — and the one object (the Gram matrix) that separates them;</li>
+            <li>a proof + measurement that the Gram matrix <strong>cannot encode position</strong>, and why that's the point;</li>
+            <li>the arithmetic that explains <strong>which network layers</strong> each loss uses.</li>
+          </ol>
+          <p>
+            Prerequisites: matrix multiplication and "a neural network is layers of learned filters."
+            Everything else is defined as it appears.
+          </p>
+
+          <h2>The project and the history in one minute</h2>
+          <p>
+            Before Gatys, texture synthesis and style transfer were hand-crafted statistics (wavelets,
+            patch matching). Gatys' group noticed the same year that a trained CNN's filter responses could
+            <em>generate</em> textures if you matched the right statistics of those responses — and style,
+            visually, is mostly texture. The style-transfer paper is that observation plus one more term
+            for content. My reimplementation follows the paper directly: VGG as the frozen feature
+            extractor, per-layer style losses, one content loss, L-BFGS updating the pixels. Everything in
+            this post is that sentence, unpacked.
+          </p>
+
+          <h2>The vocabulary you'll need</h2>
+          <ul>
+            <li><strong>VGG:</strong> a classic ImageNet classification CNN — 13 small (3×3) convolutions stacked in 5 blocks with pooling between. We never use its classifications; we use its <em>intermediate responses</em>.</li>
+            <li><strong>Feature map:</strong> at any layer, the network holds a 3-D stack of C channels over an H × W grid — one 2-D map per filter, each map saying "where this filter fired." Flattened, that's a matrix F of shape C × (H·W): one column per pixel position, holding that position's C filter responses.</li>
+            <li><strong>Gram matrix:</strong> the matrix G = F Fᵀ (normalized), of shape C × C. Entry (i, j) sums, over all positions, (channel i's response) × (channel j's response). It counts <em>co-occurrence of filters</em> — which filters fire together — and nothing about where.</li>
+            <li><strong>Receptive field:</strong> the region of the input image that influences one neuron's value. Deeper layers (after more convolutions and pooling) have larger receptive fields.</li>
+          </ul>
+
+          <h2>The inversion: optimize the image, not the network</h2>
+          <p>
+            Normal deep learning: fix the data, train the weights. Here: <strong>fix the weights, train an
+            image.</strong> Start from random noise. Run VGG on it. Compare VGG's responses to those of the
+            content photo (one comparison) and the style painting (another comparison). Backpropagate the
+            combined difference — not into the weights, but into the <em>pixel values</em>. Repeat a few
+            hundred times. The noise anneals into a picture that VGG "reads" as having the photo's content
+            and the painting's style.
+          </p>
+          <p>
+            So the entire method is: <strong>two comparisons, one optimizer</strong>. And the two
+            comparisons differ in exactly one respect — whether they remember positions.
+          </p>
+
+          <h2>The two losses</h2>
+          <p>
+            <strong>Content</strong> — compare feature maps element-wise, position by position:
           </p>
           <blockquote>
             L<sub>content</sub> = ½ ‖F<sup>ℓ</sup>(x) − F<sup>ℓ</sup>(p)‖²
-            &nbsp;&nbsp;&nbsp;·&nbsp;&nbsp;&nbsp;
-            G<sup>ℓ</sup> = F<sup>ℓ</sup>(F<sup>ℓ</sup>)ᵀ / HW
           </blockquote>
           <p>
-            Content loss compares feature maps element-wise — <strong>position by position</strong>: the
-            activation at location (i, j) should match the photo's activation at (i, j). The style term
-            compares Gram matrices instead, and the Gram matrix is where it gets interesting.
+            where x is the image being synthesized and p the content photo. The activation at location
+            (i, j) should match the photo's activation at (i, j). Positions matter — that's the content.
+          </p>
+          <p>
+            <strong>Style</strong> — compare Gram matrices instead:
+          </p>
+          <blockquote>
+            L<sub>style</sub> = Σ<sub>ℓ</sub> w<sub>ℓ</sub> ‖G<sup>ℓ</sup>(x) − G<sup>ℓ</sup>(s)‖²,&nbsp;&nbsp; G = F Fᵀ / HW
+          </blockquote>
+          <p>
+            where s is the style image. Now nothing says <em>where</em> any filter should fire — only
+            <em>which filters fire together, and how strongly</em>. The total loss,
+            α·L<sub>content</sub> + β·L<sub>style</sub>, is minimized over pixels with L-BFGS (a
+            quasi-Newton optimizer suited to smooth low-dimensional problems — Gatys' choice), plus a tiny
+            total-variation term to suppress per-pixel noise.
           </p>
 
           <h2>The proof: G is a sum over positions</h2>
           <p>
-            Unroll the matrix product. With f<sub>k</sub> the C-dimensional feature column at spatial
+            Why does the Gram matrix capture "style"? Here's the algebra. Unroll the matrix product as a
+            sum over the HW positions, with f<sub>k</sub> the C-dimensional column of filter responses at
             position k:
           </p>
           <blockquote>
-            G = F Fᵀ / HW = (1 / HW) · Σ<sub>k=1..HW</sub> f<sub>k</sub> f<sub>k</sub>ᵀ
+            G = F Fᵀ / HW = (1 / HW) · Σ<sub>k=1…HW</sub> f<sub>k</sub> f<sub>k</sub>ᵀ
           </blockquote>
           <p>
-            A sum. Matrix addition commutes — so <strong>any permutation of the spatial positions leaves G
-            unchanged</strong>, exactly. Destroy the image's layout entirely and the style representation
-            cannot notice. G's entries say "how often does channel i fire together with channel j," and
-            nowhere do they say <em>where</em>. That is the design: texture is precisely the thing that
-            stays the same when you move it around.
+            It's a <em>sum</em>. Addition commutes — so any rearrangement of the spatial positions leaves G
+            exactly unchanged. <strong>The Gram matrix is incapable of encoding where anything is.</strong>
+            It records co-occurrence — "the vertical-edge filter and the warm-color filter fire together" —
+            and position never enters.
           </p>
           <p>
-            I ran the experiment rather than just asserting it. Two synthetic feature tensors — one
-            edge-structured (Gabor-like activations at fixed positions), one stationary texture — and one
-            shuffle of every single position:
+            That's not a bug; it's the design. Consider what "style" means visually: brushstrokes, weave,
+            grain — <em>texture</em>. Texture is exactly the property that survives rearrangement: shuffle
+            the patches of a brick wall and it's still a brick wall. Content — a face, a house — dies under
+            the same shuffle. A representation blind to position is a texture detector by construction.
+          </p>
+          <p>
+            Assertions are cheap, so I ran it. Two synthetic feature tensors — one edge-structured
+            (Gabor-like filter responses at fixed positions), one stationary texture (smooth random
+            responses, the same everywhere in distribution) — then one shuffle of every single position:
           </p>
 
           <figure class="figure">
             <img src="../assets/img/posts/gram-matrix/permutation_invariance.png" alt="Six-panel grid: composite activation maps and their Gram matrix heatmaps for an edge-structured tensor and a stationary texture tensor, showing that shuffling all spatial positions leaves the Gram matrix unchanged." />
-            <figcaption>Top row: edge-structured activations, their Gram, and the Gram after shuffling every position — max |ΔG| = 1.7 × 10⁻¹⁸, i.e., machine zero. Bottom row: for genuinely stationary textures, two independent draws already share the Gram statistics. The proof is the top row; the interpretation is the bottom one.</figcaption>
+            <figcaption>How to read this: each row is one experiment; left = the composite activation map (brightness = how strongly filters fire at each position), middle = its Gram matrix (which filters co-fire; darker = stronger), right = the same statistic after scrambling every position. Top row (edge-structured): the map is destroyed by the shuffle; the Gram is untouched — max |ΔG| = 1.7 × 10⁻¹⁸, machine zero. Bottom row (texture): two independent draws already agree on the Gram, because a stationary texture is fully described by co-occurrence.</figcaption>
           </figure>
 
           <p>
-            The top row is the algebra made physical: the composite activation map is visibly destroyed by
-            the shuffle, and the Gram is untouched to 18 decimal places. The bottom row is why this is the
-            right notion of style: two <em>different</em> draws of a stationary texture produce the same
-            Gram statistics, because they agree on co-occurrence. Texture synthesis by statistics-matching
-            (Gatys' preceding 2015 paper) is exactly this: a homogeneous texture is characterized by its
-            feature covariance — and G is the sample covariance of filter responses.
+            The top row is the proof made physical: visibly different images, identical Gram to 18 decimal
+            places. The bottom row is the interpretation: a genuine texture doesn't merely <em>keep</em> its
+            Gram under shuffling — different samples of it <em>share</em> the same Gram. That's what lets
+            the optimizer reproduce a painting's feel without reproducing any of its strokes' positions.
+            (Formally: G is the sample covariance of filter responses, and a stationary random texture is
+            characterized by exactly such second-order statistics — Gatys' earlier texture-synthesis paper
+            built on this.)
           </p>
 
-          <h2>The gradients</h2>
+          <h2>The gradients (why this trains so smoothly)</h2>
           <p>
-            Both losses are quadratic in F, so the gradients are closed-form. Content, by inspection:
+            Both losses are quadratic in the features, so their gradients are closed-form — worth writing
+            down because their <em>shape</em> explains the method's behavior. Content, by inspection:
           </p>
           <blockquote>
-            ∂L<sub>content</sub>/∂F<sup>ℓ</sup> = F<sup>ℓ</sup>(x) − F<sup>ℓ</sup>(p)
+            ∂L<sub>content</sub>/∂F = F(x) − F(p)
           </blockquote>
           <p>
-            Style, with E<sub>ℓ</sub> = ‖G(x) − A‖²<sub>F</sub> (A the style image's Gram; constants fold
-            into per-layer weights): differentiate the trace, use ∂G/∂F, and:
+            A per-position correction map: "make position (i, j) respond more like the photo does."
+          </p>
+          <p>
+            Style (differentiate the trace form, constants folded into the layer weights w<sub>ℓ</sub>):
           </p>
           <blockquote>
-            ∂E<sub>ℓ</sub>/∂F<sup>ℓ</sup> = 2 (G − A) F
+            ∂L<sub>style</sub>/∂F = 2 (G − A) F
           </blockquote>
           <p>
-            Read the shape of that update: the residual (G − A) — <em>which co-occurrences are wrong</em> —
-            is projected back onto the features F, per position, with identical instructions at every
-            location. The style gradient is spatially uniform because the style objective is spatially
-            blind. The content gradient is a per-position correction map. Total loss is
-            α·L<sub>content</sub> + β·Σ<sub>ℓ</sub> w<sub>ℓ</sub>E<sub>ℓ</sub>, minimized over pixels with
-            L-BFGS (Gatys' choice; smooth, low-noise objective, a few hundred iterations), plus a small
-            total-variation regularizer to suppress high-frequency pixel noise.
+            with A the painting's Gram. Read it: the residual (G − A) — <em>which co-occurrences are
+            wrong</em> — gets projected back onto the features, and the <strong>same instruction lands at
+            every position</strong>. The style gradient is spatially uniform because the style objective is
+            spatially blind. One loss whispers "put things in the right places," the other hums "make
+            everything feel the same, everywhere." The output image is their negotiated settlement.
           </p>
 
           <h2>Why style layers are shallow and content layers are deep</h2>
           <p>
-            Every guide says "use early layers for style, later for content." The reason is arithmetic, and
-            you can compute it. A 3×3 conv grows each neuron's receptive field (RF) by 2 px times the
-            accumulated stride; a 2×2 max-pool doubles the stride. Run the recurrence
-            RF<sub>ℓ</sub> = RF<sub>ℓ−1</sub> + (k−1)·s<sub>cum</sub> through VGG16:
+            Every tutorial says: use early layers for style, deeper layers for content. The reason is
+            arithmetic, and you can compute it yourself. Each 3×3 convolution grows a neuron's receptive
+            field by 2 pixels times the accumulated stride; each 2×2 max-pool doubles the stride. Run the
+            recurrence RF<sub>ℓ</sub> = RF<sub>ℓ−1</sub> + (k−1)·s<sub>cum</sub> across VGG16's 13
+            convolutions and 5 pools:
           </p>
 
           <figure class="figure">
             <img src="../assets/img/posts/gram-matrix/receptive_fields.png" alt="Bar chart of receptive field size in pixels for every VGG16 layer, computed with the standard recurrence, with style layers highlighted in accent color and the content layer highlighted in dark." />
-            <figcaption>Computed, not copied: conv1_1 sees 3 px; conv2_1 sees 10; conv3_1 sees 24; the content layer conv4_2 sees 76; conv5_3 sees 196 px at stride 32. Style layers (accent) live where the RF is texture-sized; content (dark) lives where it is object-sized.</figcaption>
+            <figcaption>How to read this: one bar per VGG16 layer (left to right = shallow to deep), bar height = how many pixels of input each neuron at that layer can see. Style layers (accent) live in the small-window regime — 3 to 24 px — where neurons can only respond to local texture. The content layer (dark, conv4_2 at 76 px) sits where windows are object-sized. Computed, not copied from a table.</figcaption>
           </figure>
 
           <p>
-            Now the layer assignment stops being folklore. A neuron with a 3–24 px window can only respond
-            to <strong>local texture</strong> — brush strokes, weave, grain — and its Gram statistics are
-            texture statistics. A neuron with a 76–196 px window responds to <strong>arrangements of
-            parts</strong> — where the eyes are relative to the chin — which is exactly the "where"
-            information the content loss needs and the Gram matrix would destroy. The architecture hands
-            you a texture dial and an object dial, and Gatys' layer sets (relu1_1…relu5_1 for style,
-            relu4_2 for content) sit right where this computed table says they should.
+            Now the layer assignment stops being folklore. A neuron whose window is 3–24 px can only detect
+            <strong>local texture</strong> — strokes, grain, weave — and a Gram matrix over such neurons
+            holds texture statistics: the right currency for style. A neuron with a 76–196 px window
+            responds to <strong>arrangements of parts</strong> — where the eyes are relative to the chin —
+            exactly the positional information the content loss needs and the Gram matrix would destroy.
+            Gatys' layer sets (relu1_1…relu5_1 for style, relu4_2 for content) sit precisely where this
+            computed table says they should. The architecture hands you a texture dial and an object dial;
+            the paper just labeled them.
           </p>
 
           <h2>What I take from it</h2>
           <ol>
-            <li><strong>Representation = the invariances you choose.</strong> The Gram matrix isn't a clever hack; it's a statement — "for style, position is noise" — implemented in one line of linear algebra. Most design decisions in feature engineering are the same kind of statement, usually left implicit.</li>
-            <li><strong>Optimization can replace training.</strong> No parameters were learned in the making of any style-transfer image. When the objective is differentiable and the "model" is fixed, synthesis-by-optimization is often cheaper and more controllable than fine-tuning.</li>
-            <li><strong>Sanity-check invariants by measurement.</strong> The permutation check cost five lines of NumPy and caught nothing — which is itself the result: 1.7 × 10⁻¹⁸ confirms the invariance holds in float arithmetic, not just on the whiteboard.</li>
+            <li><strong>A representation is a choice of what to ignore.</strong> The Gram matrix isn't a trick — it's the statement "for style, position is noise," implemented in one line of linear algebra. Most feature design is this kind of statement, usually left implicit.</li>
+            <li><strong>Optimization can replace training.</strong> No parameters were learned in the making of any stylized image. When the objective is differentiable and the model is fixed, synthesis-by-optimization is often cheaper and more controllable than fine-tuning anything.</li>
+            <li><strong>Check invariants numerically.</strong> The permutation experiment is five lines of NumPy. It confirmed the invariance to 10⁻¹⁸ — i.e., it holds in floating-point arithmetic, not just on the whiteboard. Cheap checks like that are how derivations earn trust.</li>
           </ol>
 
           <h2>Reproduce</h2>
           <pre><code>git clone https://github.com/anubhavagr/neural-style-transfer
 cd neural-style-transfer
 
-# content + style -> stylized image, Gatys-style optimization
-python transfer.py --content in/content.jpg --style in/style.jpg \
-                   --steps 500 --style-weight 1e6 --content-weight 1</code></pre>
+# drop a photo into data/content/ and a painting into data/style/, then:
+python main.py     # Gatys-style optimization; outputs land in results/</code></pre>
           <p>
-            The permutation experiment is
-            <code>G = F @ F.T / F.shape[1]</code>, a <code>rng.permutation</code> on the position axis, and
-            a <code>np.abs(...).max()</code>. If your Gram moves by more than machine epsilon, your
-            normalization is wrong — and now you know how to check.
+            The permutation experiment, if you want to repeat it yourself: build any feature tensor F,
+            compute <code>G = F @ F.T / F.shape[1]</code>, shuffle F's position axis with
+            <code>rng.permutation</code>, recompute, and take <code>np.abs(...).max()</code>. If your Gram
+            moves by more than machine epsilon, your normalization is off — and now you know how to check.
           </p>
 
           <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
-            <a class="btn btn--primary btn--sm" href="int8-quantization.html">Start the series over: 256 levels is plenty →</a>
+            <a class="btn btn--primary btn--sm" href="ipic-architecture.html">Next: on-device RAG over a whole disk →</a>
             <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/neural-style-transfer" target="_blank" rel="noopener">Repo on GitHub</a>
             <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/no_more_BWs" target="_blank" rel="noopener">Sibling repo: no_more_BWs</a>
           </p>
