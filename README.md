@@ -10,7 +10,7 @@ Zero build step. Plain HTML + CSS + vanilla JS, served statically by GitHub Page
 ```
 index.html                      # landing (hero, work, open source, experience, skills, contact)
 projects/
-  aimag.html                    # case study — X-ray super-resolution product ($200K+ ARR)
+  (removed — AIMAG lives in the experience timeline)
   adaptive-rag.html             # case study — stateful LangGraph RAG agent
 assets/
   css/styles.css                # design system (tokens, themes, components)

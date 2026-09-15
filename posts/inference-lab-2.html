@@ -5,11 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3× the memory bought me 9% — Part 2 · Anubhav Agrawal</title>
   <meta name="description" content="Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind 1 queue — and measured it at K=1,2,3 on an M4 Pro. 3× the RAM bought +9% throughput. The arithmetic says why: 1 instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along." />
+  <link rel="canonical" href="https://anubhavagr.github.io/posts/inference-lab-2.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="3x the memory bought me 9%" />
+  <meta property="og:description" content="Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind 1 queue — and measured it at K=1,2,3 on an M4 Pro. 3× the RAM bought +9% throughput. The arithmetic says why: 1 instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along." />
+  <meta property="og:url" content="https://anubhavagr.github.io/posts/inference-lab-2.html" />
+  <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/inference-lab/dispatch_scaling.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "3x the memory bought me 9%",
+    "description": "Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind 1 queue — and measured it at K=1,2,3 on an M4 Pro. 3× the RAM bought +9% throughput. The arithmetic says why: 1 instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along.",
+    "datePublished": "2026-08",
+    "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
+    "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
+    "mainEntityOfPage": "https://anubhavagr.github.io/posts/inference-lab-2.html",
+    "image": "https://anubhavagr.github.io/assets/img/posts/inference-lab/dispatch_scaling.png"
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=5" />
 </head>
 <body>
   <header class="nav" id="nav">
@@ -19,7 +39,7 @@
       </a>
       <nav class="nav__links" id="nav-links" aria-label="Primary">
         <a href="../index.html#work">Work</a>
-        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
         <a href="../index.html#contact">Contact</a>
@@ -36,7 +56,7 @@
         <div class="article__head">
           <a class="back" href="../index.html#work">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            All work
+            All blogs
           </a>
           <span class="card__tag">LLMs · Inference · Part 2 of 2</span>
           <h1 style="margin-top:.8rem;">3× the memory bought me 9%.</h1>
@@ -371,6 +391,6 @@ python -m bench.plots</code></pre>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
   </button>
 
-  <script src="../assets/js/main.js?v=3"></script>
+  <script src="../assets/js/main.js?v=6"></script>
 </body>
 </html>
