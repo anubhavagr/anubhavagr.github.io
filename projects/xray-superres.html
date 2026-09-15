@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-time Blind X-ray Image Super-resolution · Anubhav Agrawal</title>
+  <meta name="description" content="Case study: single-image blind super-resolution and denoising on live cath-lab feeds — PyTorch to TensorRT INT8, 600+ FPS on RTX 4090, at $200K+ ARR." />
+  <link rel="canonical" href="https://anubhavagr.github.io/projects/xray-superres.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Real-time blind X-ray image super-resolution" />
+  <meta property="og:description" content="Single-image blind super-resolution and denoising on live cath-lab feeds — owned end-to-end, 600+ FPS at $200K+ ARR." />
+  <meta property="og:url" content="https://anubhavagr.github.io/projects/xray-superres.html" />
+  <meta property="og:image" content="https://anubhavagr.github.io/assets/img/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Real-time blind X-ray image super-resolution",
+    "description": "Case study: blind super-resolution and denoising on live cath-lab X-ray feeds, owned end-to-end.",
+    "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
+    "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
+    "mainEntityOfPage": "https://anubhavagr.github.io/projects/xray-superres.html",
+    "image": "https://anubhavagr.github.io/assets/img/og.png"
+  }
+  </script>
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=8" />
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blogs</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#work">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All work
+          </a>
+          <span class="card__tag">Computer Vision · Medical AI · Production</span>
+          <h1 style="margin-top:.8rem;">Real-time blind X-ray image super-resolution</h1>
+          <p class="sub">Super-resolution and denoising on live cath-lab X-ray feeds — owned end-to-end, from model R&amp;D through INT8/FP16 quantization to TensorRT/C++ serving, at <strong>$200K+ ARR</strong>.</p>
+
+          <div class="article__meta">
+            <div><b>Role</b><span>ML Engineer &amp; Team Lead · owner</span></div>
+            <div><b>Throughput</b><span>600+ FPS · RTX 4090</span></div>
+            <div><b>Latency</b><span>−70%</span></div>
+            <div><b>ARR</b><span>$200K+</span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">I built <strong>AIMAG</strong> — single-image blind super-resolution and denoising for live
+            fluoroscopy — and carried it through to revenue: <strong>PyTorch → ONNX → TensorRT</strong> with
+            INT8/FP16 quantization, served through FastAPI/C++ at <strong>600+ FPS on an RTX 4090</strong> with
+            <strong>−70% latency</strong> and under 5% accuracy loss, alongside an automatic
+            <strong>QCA pipeline (0.94 Dice, &lt;4 s)</strong> that cardiologists use mid-procedure.</p>
+          </div>
+
+          <h2>The system</h2>
+          <p>Interventional cardiology runs on X-ray fluoroscopy: low-dose frames, real-time decisions.
+          Radiation dose and image quality trade off directly — halve the dose and you roughly halve the
+          signal. The product question: can a learned restoration model recover diagnostic quality from
+          noisy, low-resolution live frames fast enough that the cath-lab never notices it is there?
+          "Blind" means no paired high-resolution ground truth exists at inference time — the model must
+          handle whatever noise and resolution the machine produces.</p>
+
+          <h2>What I built</h2>
+
+          <h3>1. The restoration model</h3>
+          <p>Single-image blind super-resolution and denoising trained for fluoroscopic statistics —
+          R&amp;D, data pipeline, and release all owned end-to-end. The segmentation side of the product
+          (automatic QCA) uses a <strong>U-Net++ with a ResNet50 encoder at 0.94 Dice</strong>; the
+          imbalance math behind that number is
+          <a href="../posts/dice-imbalance.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">written up here</a>.</p>
+
+          <h3>2. The quantization pipeline</h3>
+          <p>The model only matters if it keeps up with a live feed alongside the rest of the imaging
+          stack on one workstation. The path was <strong>PyTorch → ONNX → TensorRT</strong> with
+          INT8/FP16 quantization: <strong>600+ FPS on an RTX 4090</strong>, <strong>−70% latency</strong>,
+          under 5% accuracy loss. Quantization was the single highest-leverage change in making real-time
+          possible — the derivation of why INT8 barely hurts is
+          <a href="../posts/int8-quantization.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">the subject of this post</a>,
+          and the stage-by-stage conversion walkthrough is
+          <a href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">open-sourced here</a>.</p>
+
+          <h3>3. Serving and the QCA pipeline</h3>
+          <p>FastAPI fronting C++ inference so the restoration runs in the live loop, plus the automatic
+          <strong>QCA (quantitative coronary analysis)</strong> pipeline that completes in
+          <strong>under 4 seconds</strong> — measurements cardiologists previously traced by hand.</p>
+
+          <h2>Measured outcome</h2>
+          <table>
+            <thead><tr><th>Metric</th><th>Result</th><th>Conditions</th></tr></thead>
+            <tbody>
+              <tr><td>Throughput</td><td><strong>600+ FPS</strong></td><td>RTX 4090, INT8/FP16, full pipeline</td></tr>
+              <tr><td>Latency</td><td><strong>−70%</strong></td><td>vs. the pre-optimization deployment</td></tr>
+              <tr><td>Accuracy loss</td><td><strong>&lt;5%</strong></td><td>measured perceptual comparison vs FP32</td></tr>
+              <tr><td>QCA segmentation</td><td><strong>0.94 Dice</strong></td><td>U-Net++/ResNet50, coronary vessels</td></tr>
+              <tr><td>Commercial</td><td><strong>$200K+ ARR</strong></td><td>product line owned end-to-end</td></tr>
+            </tbody>
+          </table>
+
+          <h2>Patents applied</h2>
+          <ul>
+            <li><strong>AI-powered X-ray image enhancement</strong> (202541071194) — single-image blind super-resolution &amp; denoising.</li>
+            <li><strong>Enhancing body part from angiography loop</strong> (202441009957) — dynamic roadmap generation from DSA sequences.</li>
+            <li><strong>Image enhancement in X-ray fluoroscopy</strong> (202541041511) — real-time contrast enhancement &amp; denoising.</li>
+          </ul>
+
+          <h2>What I learned</h2>
+          <p>A medical AI product lives or dies on the inference budget, not the model paper. Every unit
+          of latency removed on the deployment side was worth more than a point of PSNR on the research
+          side — and owning R&amp;D through serving is what made that trade visible at all.</p>
+
+          <p style="margin-top:2rem;">
+            <a class="btn btn--primary btn--sm" href="../index.html#contact">Get in touch →</a>
+            <a class="btn btn--ghost btn--sm" href="adaptive-rag.html">Next case study: Adaptive RAG</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=7"></script>
+</body>
+</html>

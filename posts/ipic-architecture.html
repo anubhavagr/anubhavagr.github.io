@@ -4,12 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>A file manager that understands your files — entirely offline · Anubhav Agrawal</title>
-  <meta name="description" content="How ipic indexes a hard drive for meaning without a single network call: a Rust workspace, whisper transcription at index time, an i8-quantized mmap'd vector store, and crash-safety that holds it together." />
+  <meta name="description" content="Part 1 of the ipic series: building the first engine — three retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, and crash-safety by job state. One focused week, 23 commits." />
+  <link rel="canonical" href="https://anubhavagr.github.io/posts/ipic-architecture.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="A file manager that understands your files, entirely offline" />
+  <meta property="og:description" content="Part 1 of the ipic series: building the first engine — three retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, and crash-safety by job state. One focused week, 23 commits." />
+  <meta property="og:url" content="https://anubhavagr.github.io/posts/ipic-architecture.html" />
+  <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/ipic-architecture/arch.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "A file manager that understands your files, entirely offline",
+    "description": "Part 1 of the ipic series: building the first engine — three retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, and crash-safety by job state. One focused week, 23 commits.",
+    "datePublished": "2026-08",
+    "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
+    "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
+    "mainEntityOfPage": "https://anubhavagr.github.io/posts/ipic-architecture.html",
+    "image": "https://anubhavagr.github.io/assets/img/posts/ipic-architecture/arch.png"
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=5" />
 </head>
 <body>
   <header class="nav" id="nav">
@@ -19,7 +39,7 @@
       </a>
       <nav class="nav__links" id="nav-links" aria-label="Primary">
         <a href="../index.html#work">Work</a>
-        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
         <a href="../index.html#contact">Contact</a>
@@ -36,16 +56,16 @@
         <div class="article__head">
           <a class="back" href="../index.html#blog">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            All posts
+            All blogs
           </a>
-          <span class="card__tag">Systems · Rust · On-device AI</span>
+          <span class="card__tag">ipic · Part 1 of 3</span>
           <h1 style="margin-top:.8rem;">A file manager that understands your files — entirely offline.</h1>
-          <p class="sub">I built a file manager where you type or say "the lecture where she explains radiation shielding" and it finds the mp4 — no cloud, no API calls, no telemetry. This is the architecture tour: every constraint, and the systems decision that satisfies it.</p>
+          <p class="sub">This is Part 1 of a three-part build log for ipic, my open-source Rust file manager with fully on-device RAG search. This part is the first engine: three retrieval lanes, a quantized memory-mapped vector store, whisper on CPU, and crash-safety — built in one focused week.</p>
 
           <div class="article__meta">
-            <div><b>Language</b><span>Rust · 4 crates</span></div>
-            <div><b>Search</b><span>Hybrid RAG · single-digit ms</span></div>
-            <div><b>Footprint</b><span>~250 MB models, then offline</span></div>
+            <div><b>Series</b><span>ipic · Parts 1–3</span></div>
+            <div><b>Part 1 covers</b><span>The v1 engine, Aug 20–22</span></div>
+            <div><b>The whole build</b><span>23 commits · 8 days · ~9.8k lines Rust</span></div>
             <div><b>Repo</b><span><a href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/ipic</a></span></div>
           </div>
         </div>
@@ -54,13 +74,14 @@
           <div class="callout">
             <div class="h">TL;DR</div>
             <p style="margin:0;">
-              <strong>ipic</strong> is a fully local file manager with RAG search over everything on your
-              disk — text, PDFs, audio, video. Three constraints shaped it: <strong>fast</strong>
-              (single-digit-millisecond search via parallel integer dot-products), <strong>tiny RAM</strong>
-              (embeddings stored as 1-byte components in an mmap'd file — 4× smaller than f32, near-zero
-              resident cost), <strong>never a network call</strong> (local bge-small embeddings, local
-              whisper transcription, a deterministic hashing fallback). The whole indexing pipeline is
-              background, resumable, and crash-safe. This post is the tour of how those constraints were met.
+              The first version of ipic was one pipeline: an N-core scanner feeds extraction workers
+              (text/PDF on a fast lane, audio/video gated behind whisper), a chunker cuts 320-word windows
+              with 24-word overlap, and everything lands in two stores — SQLite FTS5 for keywords and a
+              custom <strong>mmap'd i8-quantized vector file</strong> for meaning. Three retrieval lanes
+              fused by reciprocal rank fusion answered queries in <strong>single-digit
+              milliseconds</strong>. This post walks that engine piece by piece, including the parts that
+              later had to be thrown away — the subject of
+              <a href="ipic-v2-scale.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 3</a>.
             </p>
           </div>
 
@@ -68,156 +89,167 @@
           <p>
             You have thousands of files. Some you can search by name; most you can't — the thing you
             remember about a lecture is <em>what was said in it</em>, not its filename. Cloud services
-            solve this by uploading your life to a server. <strong>On-device RAG</strong> (retrieval-augmented
-            search, running locally) solves it without that: an indexing process reads your files, converts
-            their content into searchable representations, and answers natural-language queries from those
-            representations — all on your machine.
+            solve this by uploading your life to a server. <strong>On-device RAG</strong>
+            (retrieval-augmented search, running locally) solves it without that: an indexing process reads
+            your files, converts their content into searchable representations, and answers
+            natural-language queries from those representations — all on your machine.
           </p>
           <p>
-            This post walks ipic's architecture end to end, organized the way I actually built it — around
-            three constraints and one accident-recovery story:
+            ipic is my from-scratch build of that, in Rust, under three hard constraints:
+            <strong>fast</strong> (millisecond queries), <strong>small RAM</strong> (it's a file manager,
+            not a datacenter), and <strong>never a network call</strong> after first-run model download.
+            The series is the honest build log:
           </p>
           <ol>
-            <li><strong>The shape of the system</strong> — four Rust crates, one background pipeline.</li>
-            <li><strong>Fast</strong> — all-core scanning and millisecond search.</li>
-            <li><strong>Small</strong> — i8-quantized vectors behind an mmap.</li>
-            <li><strong>Offline and robust</strong> — local models, and why whisper runs on CPU when the GPU is faster.</li>
+            <li><strong>this post</strong> — the v1 engine: lanes, vector store, whisper, crash-safety;</li>
+            <li><a href="ipic-hybrid-search.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);"><strong>Part 2</strong></a> — the ranking math: reciprocal rank fusion, derived and computed;</li>
+            <li><a href="ipic-v2-scale.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);"><strong>Part 3</strong></a> — what 350,000 files did to the design: the sharded v2 rewrite.</li>
           </ol>
           <p>
-            Prerequisites: general programming comfort. You don't need to know Rust — I'll define the few
-            systems concepts (mmap, WAL, quantization) as they appear, and link my earlier posts for the
-            deeper math.
-          </p>
-
-          <h2>The project behind it</h2>
-          <p>
-            <a href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">ipic</a> is
-            open-source and runs on macOS (Apple Silicon primary) and Linux. It looks like a normal file
-            manager — tree, filters, sorting, open/rename/trash — with one extra box: a single query field.
-            Type <em>or speak</em> a natural-language query and results from text files, PDFs, audio
-            recordings and videos are ranked <em>together</em>. No mode picker, no per-type flags. On my
-            machine right now: <strong>435 files indexed, 1,548 vectors stored, 12 cores</strong> — with
-            typical search latency in single-digit milliseconds.
+            Prerequisites: general programming comfort. mmap, WAL, and quantization are defined below; the
+            deeper INT8 math lives in
+            <a href="int8-quantization.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">my quantization post</a>.
           </p>
 
           <h2>The vocabulary you'll need</h2>
           <ul>
-            <li><strong>RAG</strong> (retrieval-augmented generation): find relevant content first, then use it. Here the "generation" is mostly ranking — retrieve the chunks that match your query's meaning.</li>
-            <li><strong>Embedding model:</strong> a small neural network (here <strong>bge-small-en-v1.5</strong>, running locally through ONNX Runtime) that turns text into a 384-dimension vector, such that similar meanings land close together.</li>
-            <li><strong>whisper:</strong> OpenAI's open-source speech-to-text model, compiled locally (whisper.cpp); ipic uses the 4-bit-quantized small.en variant.</li>
-            <li><strong>FTS5 / BM25:</strong> SQLite's full-text search module and the ranking formula it implements — classic keyword search.</li>
-            <li><strong>mmap:</strong> memory-mapped files — the OS lazily pages a file into memory on demand, so a large index costs RAM only for the parts you touch.</li>
-            <li><strong>WAL:</strong> write-ahead logging — SQLite's mode where writes append to a log instead of rewriting pages in place, so batched indexing never blocks readers.</li>
+            <li><strong>Embedding model:</strong> a small neural network (ipic uses <strong>bge-small-en-v1.5</strong>, the int8-quantized ONNX build, 384-d) that turns text into a vector such that similar meanings land close together. If the model can't even load — no network, fresh machine — a deterministic <strong>feature-hashing embedder</strong> (512-d, signed FNV hashing of word unigrams and bigrams) takes over, so search never dies.</li>
+            <li><strong>FTS5 / BM25:</strong> SQLite's full-text search and the classic ranking formula behind it — keyword search, exact and fast.</li>
+            <li><strong>whisper:</strong> open-source speech-to-text, compiled locally (whisper.cpp bindings). ipic ships q5_1-quantized models and beam-search decoding (beam 5).</li>
+            <li><strong>mmap:</strong> memory-mapped files — the OS pages data in on demand, so a large index costs RAM only for what you touch.</li>
+            <li><strong>WAL:</strong> SQLite's write-ahead log — writers append instead of rewriting pages, so batched indexing never blocks readers.</li>
           </ul>
 
-          <h2>The shape of the system</h2>
+          <h2>The week it was built</h2>
           <p>
-            ipic is a Rust workspace of four crates, because the boundaries matter:
-            <code>ipic-core</code> (parallel directory walker, SQLite catalog, change watcher),
-            <code>ipic-rag</code> (embedders, vector store, chunker, extraction, whisper, hybrid search),
-            <code>ipic-cli</code> (headless driver), and <code>ipic-app</code> (the egui GUI). The GUI is
-            deliberately a thin shell — it talks to the same <code>Engine</code> the CLI drives, so the
-            interface is swappable without touching core logic.
+            The repository's 23 commits tell the story with unusual clarity, because the whole thing
+            happened in two sprints. The first: <em>initial commit</em> on Aug 20, then on Aug 22 the two
+            commits that made it a product — "on-device multimodal RAG file manager" and "unified
+            multimodal search, full file-manager actions, lean codebase."
+          </p>
+          <p>
+            Then the commit messages get humble, which is my favorite part of the log: "file rows were not
+            click-sensing — open/context menu never triggered," followed by "rows never received clicks —
+            interaction now hangs off widget responses," followed by a full "workflow bug sweep across
+            search, navigation, file ops and toolbar." A retrieval engine can be mathematically beautiful
+            and still lose to an event loop that never delivered the clicks. The same day:
+            "tests no longer spawn Finder windows" and "test runs no longer touch the user's real config" —
+            hermeticity fixes, because the first test suite was opening real windows on my desktop while it
+            ran.
+          </p>
+          <p>
+            The sprint closed with two feature commits that rounded out v1: "audio-to-audio matching,
+            stronger STT" (acoustic fingerprints — more below) and "finder-grade UX" — multi-select,
+            icons, footer progress. Total: a working multimodal RAG file manager in roughly 72 hours of
+            calendar, ~5k lines of Rust at that point.
           </p>
 
+          <h2>The v1 engine</h2>
+
           <figure class="figure">
-            <img src="../assets/img/posts/ipic-architecture/arch.png" alt="Architecture diagram with two halves: an indexing pipeline from scan through workers, chunking and embedding into SQLite FTS5 and an i8 vector store, and a query path fanning into dense, keyword and filename lanes merged by weighted reciprocal rank fusion." />
-            <figcaption>How to read this: top half is what happens in the background while you browse (files flow left to right into the two stores). Bottom half is what happens when you press Enter on a query — three parallel retrieval lanes over the two stores, fused by one formula into a single ranking. The next post covers that formula properly.</figcaption>
+            <img src="../assets/img/posts/ipic-architecture/arch.png" alt="Diagram of the v1 ipic engine: a single indexing pipeline from N-core scan through workers, chunker and embedder into SQLite FTS5 and an i8 vector store, and a query path with three retrieval lanes fused by weighted reciprocal rank fusion." />
+            <figcaption>How to read this: top half is the background indexing pipeline (files flow left to right into the two stores). Bottom half is the query path — three lanes over the two stores, one fusion formula. Part 3 redraws this diagram after the v2 rewrite, and the differences are the point of this series.</figcaption>
           </figure>
 
           <p>
-            The indexing pipeline, left to right: a <strong>walker</strong> fans out across all cores and
-            batch-upserts file metadata into SQLite (WAL mode, so the catalog is readable while writes
-            land). Then <strong>self-serving workers</strong> claim extraction jobs: text and PDF take a
-            fast lane; audio and video queue for <strong>whisper</strong>, gated by a semaphore so
-            transcription parallelism matches what the machine can actually feed (more on that below).
-            Extracted text is <strong>chunked</strong> with overlap, batch-<strong>embedded</strong>, and
-            lands as FTS5 rows plus quantized vectors.
+            The pipeline, left to right. A <strong>walker</strong> fans across all cores and batch-upserts
+            file metadata into SQLite (WAL mode). <strong>Extraction workers</strong> claim jobs: text and
+            PDF take a fast lane; audio and video queue for <strong>whisper</strong>, gated by a semaphore
+            so transcription parallelism matches what the machine can feed. Extracted text is
+            <strong>chunked</strong> — 320 words (≈512 tokens) with a 24-word trailing overlap so context
+            at boundaries survives, at most 8 chunks per file — then batch-embedded and written to both
+            stores transactionally, and the file flips to Done.
           </p>
           <p>
-            The accident-recovery story: the whole pipeline is <strong>resumable</strong>. Every unit of
-            work carries a state; anything interrupted mid-flight resets to Pending on the next launch and
-            gets re-claimed. Kill the process during a 2-hour video transcription marathon, restart, and
-            nothing completes twice and nothing is lost — the design goal was "indexing is never a
-            ceremony."
-          </p>
-
-          <h2>Constraint 1: fast</h2>
-          <p>
-            Two latencies matter. <strong>Indexing throughput</strong> comes from the N-core walker and
-            batched writes — on my 12-core machine the walker keeps every core fed. <strong>Query
-            latency</strong> comes from the search path: the dense lane is a brute-force dot-product scan
-            over the vector store, executed with rayon (Rust's work-stealing parallelism) over
-            integer-friendly arithmetic. At my corpus size that scan plus FTS5 plus filename matching plus
-            fusion lands at <strong>4 ms</strong> — and the arithmetic of when brute force <em>stops</em>
-            being enough is exactly the subject of my
-            <a href="image-search-geometry.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">image-search post</a>
-            (short version: to ~10⁶ chunks it's fine; past that you partition).
+            <strong>Crash-safety</strong> is a job-state machine, not a ceremony: every unit of work
+            carries a state; anything interrupted mid-flight resets to Pending on the next launch and is
+            re-claimed. Kill the process during a transcription marathon, restart, and nothing completes
+            twice and nothing is lost.
           </p>
 
-          <h2>Constraint 2: small RAM</h2>
+          <h2>The vector store: 396 bytes at a time</h2>
           <p>
-            A file manager that eats 4 GB of RAM to search your disk is a bug, not a feature. The vector
-            store is where naive implementations blow up: f32 embeddings cost 4 bytes per component. ipic
-            stores each component as <strong>1 byte (i8-quantized)</strong> with a per-vector scale, cutting
-            the index 4×, and serves it through an <strong>mmap</strong> — the OS pages in only what a
-            query touches, so the resident cost rides the page cache instead of the heap.
+            The piece I'm proudest of in v1 is the custom vector store, because it's where the constraints
+            compound. Dense retrieval needs a 384-float vector per chunk; storing f32 costs 1,536 bytes
+            each. ipic's store writes fixed <strong>396-byte records</strong>:
+            <code>[chunk_rowid u64][scale f32][384 × i8]</code> — one byte per component, symmetric
+            quantization with a per-vector scale, a 64-byte file header carrying the dimension and an
+            FNV-1a hash of the model identity (change the embedder and the store refuses to serve stale
+            vectors — derived data is wiped and files re-queued). Freed slots recycle through a free-list;
+            freed middles are tombstoned so scans skip them; freed tails truncate straight off the file.
           </p>
 
           <figure class="figure">
             <img src="../assets/img/posts/ipic-architecture/memory.png" alt="Log-scale bar chart comparing f32 and i8 vector index sizes at 10 thousand, 100 thousand and 1 million chunks of 384-dimension embeddings, showing a consistent 4x reduction." />
-            <figcaption>How to read this: index bytes on disk (log scale) at three corpus sizes, 384-d embeddings, 4 bytes per component (gray) vs 1 byte (accent). My actual index — 1,548 vectors — is 0.59 MB quantized vs 2.38 MB as f32; the gap is the same 4× at any size.</figcaption>
+            <figcaption>How to read this: index bytes on disk (log scale) at three corpus sizes, 4 bytes per component (gray) vs 1 byte (accent). The 4× is structural — any corpus, any embedder.</figcaption>
           </figure>
 
           <p>
-            The quantization math is the same affine map and s/2 error bound I derived in
-            <a href="int8-quantization.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">my INT8 post</a>
-            — applied to retrieval instead of convolution weights. Retrieval is friendlier to quantization
-            than almost any workload: you're comparing directions between normalized vectors, and a
-            dot-product over 384 components averages the per-component noise away. Recall barely moves;
-            the RAM bill drops 4×.
+            Queries scan the file through an <strong>mmap</strong> (prefaulted with
+            <code>MADV_WILLNEED</code>, so the first query hits resident pages) and compute top-k as
+            <strong>integer i8×i8 dot products</strong> — the kind of loop the compiler auto-vectorizes to
+            NEON — parallelized by rayon over 4,096-record shards with a partial top-k per shard, then
+            merged. Why this is safe is measured, not assumed: <strong>at one million chunks, the
+            documented benchmark shows recall within 1% of f32 at rank 10</strong>, for a scan that moves
+            ~400 MB of i8 data through the page cache. The quantization math behind that tolerance is the
+            same affine map and s/2 bound I derive in
+            <a href="int8-quantization.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">the INT8 post</a>
+            — retrieval is kinder to quantization than almost any workload, because a dot product over 384
+            components averages the per-component noise away.
           </p>
 
-          <h2>Constraint 3: offline — and the CPU-over-GPU surprise</h2>
+          <h2>Whisper and the GPU trap</h2>
           <p>
-            "No network calls" is a hard invariant: two models (bge-small for embeddings, whisper small.en
-            q5 for speech) download once, cache under <code>~/.ipic/</code>, and everything after that is
-            fully local. If the models aren't present at all, a deterministic <strong>feature-hashing
-            embedder</strong> takes over — worse rankings, but search never dies.
-          </p>
-          <p>
-            The interesting decision inside this constraint: whisper runs on <strong>CPU by default, even
-            though the GPU is faster</strong>. whisper.cpp keeps one mutable state per loaded model — a
-            single stream of transcription — so GPU mode serializes all audio jobs behind one lane. The
-            CPU path (Apple's Accelerate BLAS) transcribes at <strong>~35× realtime</strong>, <em>and</em>
+            The most instructive v1 decision: whisper runs on <strong>CPU by default, even though the GPU
+            is faster</strong>. The whisper context keeps mutable decode state, and the Metal path is only
+            safe with a single concurrent state — one stream of transcription. The CPU path (Apple's
+            Accelerate BLAS) transcribes at <strong>~35× realtime with beam-5 decoding</strong> — and
             parallelizes across workers. For a background indexer, twelve 35×-realtime lanes beat one
-            100×-realtime lane every time. "Fastest hardware" and "fastest system" are different claims;
-            the semaphore in the pipeline diagram exists to enforce the second one.
+            faster serialized lane every time. "Fastest hardware" and "fastest system" are different
+            claims; the semaphore in the pipeline exists to enforce the second one.
           </p>
 
-          <h2>What I'd do differently, honestly</h2>
+          <h2>Audio-to-audio: the fourth signal, early</h2>
+          <p>
+            Text embeddings can't hum. For audio files (and spoken queries), v1 already shipped
+            <strong>acoustic fingerprints</strong>: a 128-dim vector per recording — 64 frequency bands ×
+            two statistic halves, spectral shape (mean log-energy per band) and spectral flux
+            (frame-to-frame change), each half unit-normalized so timbre and dynamics weigh equally. Two
+            encodes of the same recording land close; a cosine over 128 dims costs microseconds. It's
+            "find me that talk again," not "find music that feels like this" — the honest limit, stated in
+            the README, not hidden.
+          </p>
+
+          <h2>What v1 couldn't do</h2>
           <ul>
-            <li><strong>Non-speech audio is filename-only territory</strong> (music mood, ambience). The acoustic-fingerprint lane matches <em>similar recordings</em>, not semantics — that's stated, not hidden.</li>
-            <li><strong>The vector scan is brute force.</strong> Right answer at 10⁵ chunks, wrong at 10⁷ — the day it matters, IVF or HNSW slots behind the same store interface.</li>
-            <li><strong>Image "understanding" is filename + folder context.</strong> A local CLIP would fit the constraint set (small, quantizable, offline) — future work, and the interface is ready for it.</li>
+            <li><strong>One catalog for every root</strong> — a single SQLite database and a single vector file meant one writer's lock domain and one scan stream, fine at thousands of files, suspect at hundreds of thousands.</li>
+            <li><strong>Images were filename-only</strong> — indexed by name and folder context, not pixels.</li>
+            <li><strong>No compute budget</strong> — the walker, extraction pool, ONNX runtime, and whisper each sized themselves; pointed at a big enough disk, they'd fight each other for cores mid-index while a query waited.</li>
+            <li><strong>No honest progress</strong> — "indexing…" with no rate or ETA is a trust problem in a tool that lives in your menu bar.</li>
           </ul>
+          <p>
+            Pointing v1 at a 350,000-file home directory turned all four into blockers at once. That story
+            — per-root shards, a CLIP vision lane that nearly starved to death, and the measured results —
+            is <a href="ipic-v2-scale.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 3</a>.
+            First, the math that makes multi-lane ranking coherent:
+            <a href="ipic-hybrid-search.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 2</a>.
+          </p>
 
           <h2>Reproduce</h2>
           <pre><code>git clone https://github.com/anubhavagr/ipic
 cd ipic
-cargo build --release          # rustup + cmake required; builds whisper.cpp
+cargo build --release          # rustup + cmake; builds whisper.cpp locally
 
 ./target/release/ipic          # GUI
 ./target/release/ipic-cli scan
 ./target/release/ipic-cli search "radiation shielding on mars"
 ./target/release/ipic-cli status</code></pre>
           <p>
-            First run downloads the two local models (~250 MB); everything after is offline. Default scope
-            is <code>~/Downloads</code>; add roots via settings or <code>config --set-roots</code>.
+            First run downloads the local models once (~250 MB); everything after is offline.
           </p>
 
           <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
-            <a class="btn btn--primary btn--sm" href="ipic-hybrid-search.html">Next: three retrieval lanes, one formula →</a>
+            <a class="btn btn--primary btn--sm" href="ipic-hybrid-search.html">Part 2: four retrieval lanes, one formula →</a>
             <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">Repo on GitHub</a>
             <a class="btn btn--ghost btn--sm" href="../projects/adaptive-rag.html">Same philosophy at work: RAG case study</a>
           </p>
@@ -244,6 +276,6 @@ cargo build --release          # rustup + cmake required; builds whisper.cpp
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
   </button>
 
-  <script src="../assets/js/main.js?v=3"></script>
+  <script src="../assets/js/main.js?v=6"></script>
 </body>
 </html>

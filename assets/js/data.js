@@ -5,24 +5,13 @@
  *   - lab:      side projects with real visual results (image, hook, chips)
  *   - projects: text-only chips for further GitHub repos
  * Kept as plain JS so the markup stays clean.
+ *
+ * NOTE: index.html prerenders these lists into static markup for crawlers
+ * and no-JS readers. Regenerate the static rows when editing below.
  * -------------------------------------------------------------------------- */
 
 window.SITE_DATA = {
   cases: [
-    {
-      title: "AIMAG — X-ray Super-Resolution in Production",
-      href: "projects/aimag.html",
-      tag: "Computer Vision · Medical AI",
-      blurb:
-        "X-ray super-resolution and denoising, owned end-to-end — model R&D, INT8/FP16 quantization, TensorRT/C++ serving, and the QCA pipeline cardiologists use in live procedures.",
-      kpis: [
-        { v: "$200K+", l: "ARR" },
-        { v: "600+", l: "FPS" },
-        { v: "−70%", l: "latency" },
-        { v: "0.94", l: "Dice" }
-      ],
-      chips: ["PyTorch", "TensorRT", "ONNX", "INT8/FP16", "FastAPI", "C++"]
-    },
     {
       title: "Adaptive RAG — a Stateful Interviewer That Listens",
       href: "projects/adaptive-rag.html",
@@ -36,65 +25,95 @@ window.SITE_DATA = {
         { v: "500+", l: "users" }
       ],
       chips: ["LangGraph", "RAG", "MongoDB", "Cross-Encoder", "Eval Harness"]
+    },
+    {
+      title: "Real-time blind X-ray image super-resolution",
+      href: "projects/xray-superres.html",
+      tag: "Computer Vision · Medical AI",
+      blurb:
+        "Super-resolution and denoising on live cath-lab feeds — owned end-to-end from model R&D through INT8/FP16 quantization to TensorRT/C++ serving, plus the automatic QCA pipeline cardiologists use mid-procedure. Three patents applied for.",
+      kpis: [
+        { v: "$200K+", l: "ARR" },
+        { v: "600+", l: "FPS · RTX 4090" },
+        { v: "−70%", l: "latency" },
+        { v: "0.94", l: "Dice · QCA" }
+      ],
+      chips: ["PyTorch", "TensorRT", "ONNX", "INT8/FP16", "FastAPI", "C++"]
     }
   ],
 
   posts: [
     {
+      title: "What 350,000 files did to ipic.",
+      href: "posts/ipic-v2-scale.html",
+      img: "assets/img/posts/ipic-architecture/app-search.png",
+      alt: "Real screenshot of the ipic application: a natural-language search returning ranked hits across file types with live status",
+      tag: "ipic 3",
+      dek: "Part 3: the v2 rewrite — per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, measured results at 350k-file scale, and what shipped after: store compaction, whole-home default scope, v0.1.1 as a macOS DMG."
+    },
+    {
       title: "A MacBook Pro can serve an LLM. Then the second user arrives.",
       href: "posts/inference-lab.html",
+      img: "assets/img/posts/inference-lab/sweep_throughput.png",
+      alt: "Line chart showing aggregate throughput staying flat from 1 concurrent user to 32",
       tag: "Part 1",
-      date: "Aug 2026",
       dek: "mlx-lm vs llama.cpp under 1 fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
     },
     {
       title: "3× the memory bought me 9%.",
       href: "posts/inference-lab-2.html",
+      img: "assets/img/posts/inference-lab/dispatch_scaling.png",
+      alt: "Dispatch benchmark chart from Part 2 of the inference-lab series",
       tag: "Part 2",
-      date: "Aug 2026",
       dek: "K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus."
     },
     {
       title: "256 levels is plenty. Here's the math that proves it.",
       href: "posts/int8-quantization.html",
+      img: "assets/img/posts/int8-quantization/calibration.png",
+      alt: "Calibration experiment: activation histogram with three candidate ranges, and error curves versus clip threshold",
       tag: "Inference",
-      date: "Aug 2026",
       dek: "What INT8 quantization is and why it barely hurts — the affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB."
     },
     {
       title: "Image search is geometry before it is learning.",
       href: "posts/image-search-geometry.html",
+      img: "assets/img/posts/image-search-geometry/geometry.png",
+      alt: "Unit-sphere geometry of embeddings: squared distance versus cosine similarity, and two classes separated by angle",
       tag: "Retrieval",
-      date: "Aug 2026",
       dek: "How search-by-image works, from zero: the cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and the arithmetic that decides when exact search dies."
     },
     {
       title: "99.6% accuracy, completely useless.",
       href: "posts/dice-imbalance.html",
+      img: "assets/img/posts/dice-imbalance/ce_vs_dice.png",
+      alt: "Cross-entropy and Dice loss curves showing opposite optima under class imbalance",
       tag: "Medical CV",
-      date: "Aug 2026",
       dek: "In medical segmentation the target — a coronary vessel — is 0.39% of the pixels, and the standard loss trains a model that's great at everything else. Derived, then fixed with Dice."
     },
     {
       title: "The Gram matrix doesn't care where anything is.",
       href: "posts/gram-matrix.html",
+      img: "assets/img/posts/gram-matrix/permutation_invariance.png",
+      alt: "Gram matrices before and after shuffling every feature position, unchanged to machine precision",
       tag: "Deep Learning",
-      date: "Aug 2026",
       dek: "Style transfer explained from zero — and its key object provably discards all position information (measured: 1.7e-18). Plus the receptive-field arithmetic behind the layer choices."
     },
     {
       title: "A file manager that understands your files — entirely offline.",
       href: "posts/ipic-architecture.html",
-      tag: "Systems",
-      date: "Aug 2026",
-      dek: "ipic's architecture tour: one background pipeline indexes a disk for meaning — whisper for speech, i8 vectors in an mmap, crash-safe by design. No cloud, no API calls."
+      img: "assets/img/posts/ipic-architecture/arch.png",
+      alt: "Diagram of the v1 ipic engine: one indexing pipeline feeding SQLite FTS5 and an i8 vector store, and a query path with three retrieval lanes fused by weighted reciprocal rank fusion",
+      tag: "ipic 1",
+      dek: "Part 1 of the ipic build log: the first engine — 3 retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, crash-safety by job state. One focused week, 23 commits."
     },
     {
-      title: "Three retrieval lanes, one formula to fuse them.",
+      title: "Four retrieval lanes, one formula to fuse them.",
       href: "posts/ipic-hybrid-search.html",
-      tag: "Retrieval",
-      date: "Aug 2026",
-      dek: "Semantic search misses exact strings; keyword search misses meaning. ipic runs both plus filenames and fuses them with weighted reciprocal rank fusion — derived, computed, running in 4 ms."
+      img: "assets/img/posts/ipic-hybrid-search/rrf_fusion.png",
+      alt: "Reciprocal rank fusion: computed fused scores for seven documents across semantic, vision and keyword lanes, and the effect of the constant k",
+      tag: "ipic 2",
+      dek: "Part 2: the ranking math — weighted reciprocal rank fusion across semantic, vision, keyword and filename lanes, derived from requirements and computed on a worked example. No re-ranker, 4–10 ms."
     }
   ],
 
@@ -104,11 +123,11 @@ window.SITE_DATA = {
       title: "ipic — a file manager that understands your files",
       repo: "ipic",
       hook:
-        "Fully on-device RAG over your whole disk: type or speak a query, get ranked results across text, PDFs, audio and video. Rust, local whisper transcription, i8-quantized vectors — no cloud, ever.",
-      img: "assets/img/posts/ipic-architecture/card.png",
-      alt: "Simplified card diagram of ipic: your disk indexed locally with whisper, embeddings and FTS5; one typed or spoken query answered by three retrieval lanes fused with RRF",
+        "Fully on-device RAG over your entire home directory: type or speak a query, get ranked results across text, PDFs, audio, video and images. Rust, local whisper transcription, i8-quantized vectors — no cloud, ever. Shipped as a macOS DMG.",
+      img: "assets/img/posts/ipic-architecture/app-search.png",
+      alt: "Real screenshot of the ipic app: a natural-language search returning 100 ranked hits across file types, with a status bar showing text and CLIP-vision embedders and image-content search active",
       href: "https://github.com/anubhavagr/ipic",
-      chips: ["Rust", "Hybrid RAG", "Whisper", "SQLite FTS5", "ONNX"]
+      chips: ["Rust", "Hybrid RAG", "Whisper", "SQLite FTS5", "ONNX", "macOS DMG · v0.1.1"]
     },
     {
       title: "Colorizing black-and-white photography",

@@ -64,11 +64,11 @@ def arrow(x1, y1, x2, y2, style="-|>", color=ACC, lw=1.6, ls="-", rad=0.0):
 def lane_label(x, y, txt):
     ax.text(x, y, txt, ha="left", va="center", fontsize=8.4, color=MUTE, **MONO)
 
-# --- indexing row (top)
+# --- indexing row (top) — v1: single pipeline
 box(2,  80, 15, 12, "scan", "N-core walker")
 box(22, 80, 19, 12, "workers", "text/PDF fast · A/V whisper")
-box(46, 80, 14, 12, "chunk", "overlapping")
-box(65, 80, 16, 12, "embed", "bge-small · ONNX")
+box(46, 80, 14, 12, "chunk", "320 w · 24 overlap")
+box(65, 80, 16, 12, "embed", "bge-small int8")
 arrow(17.4, 86, 21.4, 86); arrow(41.6, 86, 45.4, 86); arrow(60.6, 86, 64.4, 86)
 
 # --- stores (middle)
@@ -97,9 +97,59 @@ arrow(69.4, 28, 76.4, 28)
 arrow(28, 57.4, 28, 46.8, color=MUTE, ls="--")
 arrow(60, 57.4, 42, 41.5, color=MUTE, ls="--", rad=0.12)
 
-ax.text(2, 95.5, "INDEXING — background, resumable, crash-safe", fontsize=9.5, color=MUTE, **MONO)
-ax.text(2, 49.5, "QUERY — any file type, single-digit milliseconds", fontsize=9.5, color=MUTE, **MONO)
+ax.text(2, 95.5, "V1 INDEXING — one pipeline, background, resumable", fontsize=9.5, color=MUTE, **MONO)
+ax.text(2, 49.5, "V1 QUERY — 3 lanes, single-digit milliseconds", fontsize=9.5, color=MUTE, **MONO)
 save(fig, "ipic-architecture", "arch.png")
+
+# ============================================ FIG 1b: v2 sharded architecture
+fig = plt.figure(figsize=(10.6, 6.4), constrained_layout=True)
+ax = fig.add_subplot(1, 1, 1)
+ax.set_xlim(0, 100); ax.set_ylim(0, 100); ax.axis("off")
+
+# engine owns shared models + budgets (top)
+box(2, 84, 28, 11, "engine", "shared models · compute budget")
+box(36, 84, 30, 11, "extraction pool", "text/PDF fast · A/V whisper-gated")
+box(71, 84, 26, 11, "image writer", "CLIP · batch 16 · round-robin")
+arrow(30.4, 89.5, 35.4, 89.5)
+arrow(66.4, 89.5, 70.4, 89.5)
+
+# shards (middle) — one per root
+for i, (name, sub) in enumerate([("shard · root A", "catalog · 3 stores · writer"),
+                                  ("shard · root B", "catalog · 3 stores · writer")]):
+    x = 4 + i * 34
+    box(x, 58, 30, 12, name, sub, fc="#f6e3d7")
+ax.text(70.5, 64, "…one per root\nbounded channels (8192)\n= natural backpressure",
+        fontsize=8.6, color=MUTE, va="center", **MONO)
+arrow(50, 83.4, 19, 70.8, color=MUTE, ls="--")
+arrow(50, 83.4, 53, 70.8, color=MUTE, ls="--")
+
+# stores per shard (small, inside shard boxes via labels)
+lane_label(5, 54.2, "text store 384-d i8 · image store 512-d i8 · audio fingerprints 128-d")
+
+# query row (bottom)
+box(2, 20, 15, 12, "query", "typed or spoken")
+box(21, 34, 18, 10, "semantic", "w 1.0", ec=ACC)
+box(21, 22, 18, 10, "vision", "w 0.9", ec=ACC)
+box(41.5, 34, 18, 10, "keyword", "w 0.7", ec=ACC2)
+box(41.5, 22, 18, 10, "filename", "w 0.5", ec=ACC2)
+box(64, 20, 15, 12, "global RRF", "cross-shard ranks\nk=60")
+box(84, 20, 14, 12, "hydrate", "top-k only")
+arrow(17.4, 26, 20.4, 39, rad=-0.15)
+arrow(17.4, 26, 20.4, 27)
+arrow(39.4, 39, 41.1, 39)
+arrow(39.4, 27, 41.1, 27)
+arrow(60, 39, 63.4, 30, rad=0.1)
+arrow(60, 27, 63.4, 26)
+arrow(79.4, 26, 83.4, 26)
+# shards feed lanes
+arrow(19, 57.4, 25, 44.8, color=MUTE, ls="--")
+arrow(53, 57.4, 50, 44.8, color=MUTE, ls="--")
+
+ax.text(2, 97.5, "V2 — engine supervises per-root shards; every root scans, writes and serves in parallel",
+        fontsize=9.5, color=MUTE, **MONO)
+ax.text(2, 12.5, "QUERY — 4 lanes collected per shard in parallel, fused over global ranks, hydrated after fusion",
+        fontsize=9.5, color=MUTE, **MONO)
+save(fig, "ipic-architecture", "arch-v2.png")
 
 # ===================================================== FIG 2: memory math
 fig = plt.figure(figsize=(10.2, 4.2), constrained_layout=True)
@@ -127,36 +177,46 @@ print(f"[ipic/memory] real index: {1548*384*1/1e6:.2f} MB i8 vs {1548*384*4/1e6:
 
 # ===================================================== FIG 3: RRF fusion
 K = 60.0
-WV, WK = 1.0, 0.7
+WV, WVIS, WK = 1.0, 0.9, 0.7
 docs = {
-    # doc: (semantic rank, keyword rank)
-    "D1 — overview doc":   (1, 3),
-    "D2 — related notes":  (2, 9),
-    "D3 — background":     (3, 15),
-    "D4 — exact ID match": (8, 1),
-    "D5 — folder mention": (12, 2),
-    "D6 — tangential":     (20, 30),
+    # doc: (semantic rank, keyword rank, vision rank) — None = absent from lane
+    "D1 — overview doc":   (1, 3, None),
+    "D2 — related notes":  (2, 9, None),
+    "D3 — background":     (3, 15, None),
+    "D4 — exact ID match": (8, 1, None),
+    "D5 — folder mention": (12, 2, None),
+    "D6 — tangential":     (20, 30, None),
+    "D7 — beach photo":    (25, None, 1),
 }
-scores = {k: WV / (K + v[0]) + WK / (K + v[1]) for k, v in docs.items()}
+def rrf(ranks):
+    score = 0.0
+    for w, r in [(WV, ranks[0]), (WK, ranks[1]), (WVIS, ranks[2])]:
+        if r is not None:
+            score += w / (K + r)
+    return score
+scores = {k: rrf(v) for k, v in docs.items()}
 order = sorted(scores, key=scores.get, reverse=True)
-print("[ipic/rrf] fused ranking:")
+print("[ipic/rrf] fused ranking (4-lane weights 1.0/0.9/0.7):")
 for i, k in enumerate(order, 1):
-    print(f"  {i}. {k:24s} sem={docs[k][0]:>2} kw={docs[k][1]:>2}  score={scores[k]:.5f}")
+    s, kw, vis = docs[k]
+    print(f"  {i}. {k:22s} sem={s:>2} kw={kw if kw else '—':>2} vis={vis if vis else '—':>2}  score={scores[k]:.5f}")
 
 fig = plt.figure(figsize=(10.4, 4.6), constrained_layout=True)
 ax = fig.add_subplot(1, 2, 1)
 ys = np.arange(len(order))[::-1]
 vals = [scores[k] for k in order]
-colors = [ACC if "exact" in k else (ACC2 if docs[k][1] <= 3 else BORDER) for k in order]
+colors = [ACC if ("photo" in k or "exact" in k) else (ACC2 if (docs[k][1] or 0) <= 3 or (docs[k][2] or 0) <= 3 else BORDER) for k in order]
 ax.barh(ys, vals, color=colors, edgecolor=TEXT, linewidth=0.4, height=0.62)
 for y, k in zip(ys, order):
-    ax.text(0.0004, y, k, va="center", fontsize=9.6, color=TEXT)
-    ax.text(scores[k] + 0.00035, y, f"sem {docs[k][0]:>2} · kw {docs[k][1]:>2}",
-            va="center", fontsize=8.4, color=MUTE, **MONO)
+    ax.text(0.0004, y, k, va="center", fontsize=9.4, color=TEXT)
+    s, kw, vis = docs[k]
+    ax.text(scores[k] + 0.00035, y,
+            f"sem {s:>2} · kw {kw if kw is not None else '—'} · vis {vis if vis is not None else '—'}",
+            va="center", fontsize=8.2, color=MUTE, **MONO)
 ax.set_yticks([])
-ax.set_xlim(0, max(vals) * 1.30)
+ax.set_xlim(0, max(vals) * 1.34)
 ax.set_xlabel("fused RRF score")
-ax.set_title(f"a · w_v={WV}, w_k={WK}, k=60 — computed", loc="left", fontsize=10.5, **MONO)
+ax.set_title(f"a · w_sem={WV} · w_vis={WVIS} · w_kw={WK} — computed", loc="left", fontsize=10.5, **MONO)
 ax.spines[["top", "right", "left"]].set_visible(False)
 ax.grid(axis="x", color=BORDER, alpha=0.5, linewidth=0.7)
 

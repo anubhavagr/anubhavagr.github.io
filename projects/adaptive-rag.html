@@ -5,11 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Adaptive RAG — Stateful LangGraph Agent · Anubhav Agrawal</title>
   <meta name="description" content="Case study: a production RAG system with 3 parallel retrieval paths, hybrid search and cross-encoder re-ranking — 0.95 Recall@5, 68% latency cut for 500+ users." />
+  <link rel="canonical" href="https://anubhavagr.github.io/projects/adaptive-rag.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Adaptive RAG — a stateful retrieval agent at production scale" />
+  <meta property="og:description" content="Three parallel retrieval paths, hybrid search, cross-encoder re-ranking — 0.95 Recall@5 over 10K+ documents, 68% latency cut, 500+ concurrent users." />
+  <meta property="og:url" content="https://anubhavagr.github.io/projects/adaptive-rag.html" />
+  <meta property="og:image" content="https://anubhavagr.github.io/assets/img/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Adaptive RAG — a stateful retrieval agent at production scale",
+    "description": "Case study: 3-path RAG with hybrid search and cross-encoder re-ranking behind a stateful LangGraph interviewer agent.",
+    "datePublished": "2026-08",
+    "dateModified": "2026-09",
+    "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
+    "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
+    "mainEntityOfPage": "https://anubhavagr.github.io/projects/adaptive-rag.html",
+    "image": "https://anubhavagr.github.io/assets/img/og.png"
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=5" />
 </head>
 <body>
   <header class="nav" id="nav">
@@ -19,9 +40,9 @@
       </a>
       <nav class="nav__links" id="nav-links" aria-label="Primary">
         <a href="../index.html#work">Work</a>
-        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#blog">Blogs</a>
+        <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
-        <a href="../index.html#lab">Projects</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -40,10 +61,10 @@
           </a>
           <span class="card__tag">LLMs · Retrieval-Augmented Generation · Production</span>
           <h1 style="margin-top:.8rem;">Adaptive RAG — a stateful retrieval agent at production scale</h1>
-          <p class="sub">The retrieval &amp; evaluation infrastructure behind a stateful interviewer agent — <strong>0.95 Recall@5</strong> over 10K+ docs, <strong>68% latency cut</strong> for <strong>500+ concurrent users</strong>.</p>
+          <p class="sub">The retrieval and evaluation infrastructure behind a stateful interviewer agent — <strong>0.95 Recall@5</strong> over 10K+ docs, <strong>68% latency cut</strong> for <strong>500+ concurrent users</strong>.</p>
 
           <div class="article__meta">
-            <div><b>Role</b><span>AI Engineer — 2</span></div>
+            <div><b>Role</b><span>AI Engineer II · owner</span></div>
             <div><b>Recall@5</b><span>0.95</span></div>
             <div><b>p50 latency</b><span>0.8s (−68%)</span></div>
             <div><b>Users</b><span>500+ concurrent</span></div>
@@ -54,15 +75,19 @@
           <div class="callout">
             <div class="h">TL;DR</div>
             <p style="margin:0;">I architected a <strong>3-path RAG pipeline</strong> with hybrid keyword + dense
-            search and cross-encoder re-ranking, behind a stateful <strong>LangGraph</strong> agent that adapts
-            question difficulty in real time. Latency dropped from <strong>2.5s to 0.8s</strong>, domain-query
-            <strong>F1 rose 42%</strong>, and the system serves <strong>500+ users at 99.9% uptime</strong>.</p>
+            search and cross-encoder re-ranking, behind a stateful
+            <a href="https://langchain-ai.github.io/langgraph/" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">LangGraph</a>
+            agent that adapts question difficulty in real time. Latency dropped from <strong>2.5s to 0.8s</strong>,
+            domain-query <strong>F1 rose 42%</strong> over the single-path retriever it replaced, and the system
+            serves <strong>500+ users at 99.9% uptime</strong>.</p>
           </div>
 
           <h2>The system</h2>
           <p>The product is an AI interviewer that runs a real conversation: it scores the candidate's answer,
           adapts the difficulty of the next question, and follows up with targeted probes. Doing that credibly
-          requires retrieving the right context — fast — from a large, heterogeneous knowledge corpus.</p>
+          requires retrieving the right context — fast — from a large, heterogeneous knowledge corpus. A wrong
+          retrieval here is not a search-engine miss; it is the interviewer asking about the wrong topic in
+          front of a candidate.</p>
 
           <h2>What I built</h2>
 
@@ -73,19 +98,18 @@
           stays coherent over long sessions.</p>
 
           <h3>2. Three parallel retrieval paths</h3>
-          <p>A single dense index wasn't enough — the corpus has very different shapes. I built three retrieval
-          paths that run in parallel and fuse their results:</p>
+          <p>A single dense index wasn't enough — the corpus has very different shapes. Three retrieval paths run
+          in parallel and fuse their results:</p>
           <ul>
             <li><strong>Conversation embeddings</strong> — semantic match over the live dialogue for short-term context.</li>
             <li><strong>MongoDB lookup</strong> — structured / relational signals (candidate state, rubric metadata).</li>
             <li><strong>Knowledge vault</strong> — a deep domain index over <strong>10K+ documents</strong> using <strong>512-d</strong> embeddings.</li>
           </ul>
           <p>Each path contributes candidates to a <strong>hybrid keyword + dense</strong> ranking, then a
-          <strong>cross-encoder re-ranker</strong> re-scores the top-K with full query-document attention.</p>
-          <blockquote>
-            Reached <strong>0.95 Recall@5</strong> over <strong>10K+ docs</strong> — vs. a noticeably weaker
-            single-path baseline.
-          </blockquote>
+          <strong>cross-encoder re-ranker</strong> re-scores the top-K with full query-document attention. The
+          geometry that makes hybrid dense + keyword ranking work is the
+          <a href="../posts/image-search-geometry.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">subject of this post</a>
+          — the same cosine/L2 and precision-recall arithmetic, applied to text.</p>
 
           <h3>3. Latency: 2.5s → 0.8s</h3>
           <p>Three retrieval paths sounds expensive. It isn't, when orchestrated well:</p>
@@ -94,27 +118,33 @@
             <li><strong>Context fusion</strong> — candidates are deduped, re-ranked once, and only the fused top-K is passed to the LLM, shrinking the prompt.</li>
             <li><strong>Right-sized embeddings</strong> — 512-d gave us the recall we needed without the cost of 1K+ vectors.</li>
           </ul>
-          <p>Net: query latency fell from <strong>2.5s to 0.8s (−68%)</strong>, and domain-query <strong>F1 rose 42%</strong>
-          vs. the single-path baseline.</p>
 
           <h3>4. Evaluation &amp; guardrails</h3>
-          <p>I don't trust LLM output without measurement. I stood up an <strong>eval harness</strong> that scores
-          every change on:</p>
+          <p>I don't trust LLM output without measurement. The <strong>eval harness</strong> scores every change on:</p>
           <ul>
             <li><strong>Recall@k</strong> — is the right context being retrieved?</li>
             <li><strong>Faithfulness</strong> — is the answer grounded in retrieved context, not invented?</li>
             <li><strong>Answer-relevance</strong> — does it actually answer the question?</li>
           </ul>
           <p>Plus <strong>LLM guardrails with citations</strong> so every claim is traceable to a source — safe,
-          grounded outputs by construction, not by hope.</p>
+          grounded outputs by construction, not by hope. The harness is the source of truth: every optimization
+          above shipped only after it moved a measured number.</p>
 
-          <h2>Outcome</h2>
-          <ul>
-            <li><strong>0.95 Recall@5</strong> over <strong>10K+ docs</strong>.</li>
-            <li>Query latency <strong>2.5s → 0.8s (−68%)</strong>.</li>
-            <li>Domain-query <strong>F1 +42%</strong> vs. single-path baseline.</li>
-            <li><strong>500+ concurrent users</strong> at <strong>99.9% uptime</strong>.</li>
-          </ul>
+          <h2>Measured outcome</h2>
+          <p>All numbers from the eval harness, measured on the same corpus and query set before and after the
+          3-path architecture replaced the single-path dense retriever:</p>
+          <table>
+            <thead><tr><th>Metric</th><th>Single-path (before)</th><th>3-path hybrid (after)</th></tr></thead>
+            <tbody>
+              <tr><td>Recall@5, 10K+ doc vault</td><td>—</td><td><strong>0.95</strong></td></tr>
+              <tr><td>Query latency, p50</td><td>2.5 s</td><td><strong>0.8 s (−68%)</strong></td></tr>
+              <tr><td>Domain-query F1</td><td>baseline</td><td><strong>+42%</strong></td></tr>
+              <tr><td>Concurrent users served</td><td>—</td><td><strong>500+ at 99.9% uptime</strong></td></tr>
+            </tbody>
+          </table>
+          <p class="note" style="font-size:.9em; color:var(--text-soft);">The single-path system predates the eval
+          harness, so its Recall@5 was never measured under the same protocol — which is itself the lesson. The
+          deltas that are comparable (latency, F1) were measured on identical query sets.</p>
 
           <h2>What I learned</h2>
           <p>Retrieval quality is a system property, not an embedding property. The wins came from the
@@ -123,7 +153,7 @@
 
           <p style="margin-top:2rem;">
             <a class="btn btn--primary btn--sm" href="../index.html#contact">Get in touch →</a>
-            <a class="btn btn--ghost btn--sm" href="../index.html#work">See the other case study</a>
+            <a class="btn btn--ghost btn--sm" href="../index.html#experience">Experience timeline</a>
           </p>
         </div>
       </div>
@@ -148,6 +178,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
   </button>
 
-  <script src="../assets/js/main.js?v=3"></script>
+  <script src="../assets/js/main.js?v=6"></script>
 </body>
 </html>

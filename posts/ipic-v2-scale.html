@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What 350,000 files did to ipic · Anubhav Agrawal</title>
+  <meta name="description" content="Part 3 of the ipic series: the v2 rewrite — per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, and measured results at 350,000-file scale." />
+  <link rel="canonical" href="https://anubhavagr.github.io/posts/ipic-v2-scale.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="What 350,000 files did to ipic" />
+  <meta property="og:description" content="Per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, and measured results at 350,000-file scale." />
+  <meta property="og:url" content="https://anubhavagr.github.io/posts/ipic-v2-scale.html" />
+  <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/ipic-architecture/arch-v2.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=5" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "What 350,000 files did to ipic",
+    "description": "Part 3 of the ipic build log: per-root shards, bounded-channel backpressure, a CLIP vision lane, a compute budget, and measured results at 350,000-file scale.",
+    "datePublished": "2026-09-04",
+    "dateModified": "2026-09-16",
+    "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
+    "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
+    "mainEntityOfPage": "https://anubhavagr.github.io/posts/ipic-v2-scale.html",
+    "image": "https://anubhavagr.github.io/assets/img/posts/ipic-architecture/arch-v2.png"
+  }
+  </script>
+</head>
+<body>
+  <header class="nav" id="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="../index.html" aria-label="Back to home">
+        <span class="brand__name"><b>Anubhav</b> <span>Agrawal</span></span>
+      </a>
+      <nav class="nav__links" id="nav-links" aria-label="Primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#blog">Blogs</a>
+        <a href="../index.html#lab">Open source</a>
+        <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="js-resume-link btn btn--primary btn--sm" href="../assets/anubhav-agrawal-resume.pdf" download>Résumé</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <article class="article section">
+      <div class="container">
+        <div class="article__head">
+          <a class="back" href="../index.html#blog">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            All blogs
+          </a>
+          <span class="card__tag">ipic · Part 3 of 3</span>
+          <h1 style="margin-top:.8rem;">What 350,000 files did to ipic.</h1>
+          <p class="sub">v1 of ipic was a single pipeline with one catalog and three retrieval lanes, and it felt fast — until it met my actual home directory. This part is the v2 rewrite: per-root shards, bounded-channel backpressure, a CLIP vision lane that nearly starved to death, a compute budget, and the measured numbers that came out the other side.</p>
+
+          <div class="article__meta">
+            <div><b>The rewrite</b><span>30 files · +2,496 −942 lines</span></div>
+            <div><b>Scale target</b><span>350k files · 8 shards</span></div>
+            <div><b>Measured</b><span>~2.5k files/s scan · ~30 ms query</span></div>
+            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/ipic</a></span></div>
+          </div>
+        </div>
+
+        <div class="prose">
+          <div class="callout">
+            <div class="h">TL;DR</div>
+            <p style="margin:0;">
+              Four things broke at 350k files, and the fix was architectural, not incremental:
+              <strong>one catalog became one shard per root</strong> (each owning its SQLite database,
+              three vector stores, and an embed-writer thread, fed by a bounded 8,192-deep channel —
+              backpressure for free); <strong>filename-only images became a CLIP vision lane</strong>
+              (ViT-B/32, both towers, batch-16 — after fixing a claiming order that starved it);
+              <strong>self-sizing thread pools became an explicit compute budget</strong>; and
+              "indexing…" became <strong>live rates and ETAs</strong>. Measured after the rewrite:
+              <strong>~2.5k files/s scan, ~30 ms end-to-end queries, i8 recall within 1% of f32</strong>.
+            </p>
+          </div>
+
+          <h2>What this post is about</h2>
+          <p>
+            This is the third and last part of the ipic build log
+            (<a href="ipic-architecture.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1</a>:
+            the v1 engine;
+            <a href="ipic-hybrid-search.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 2</a>:
+            the ranking math). Part 3 is about what happens when a design that feels right at thousands
+            of files meets a few hundred thousand of them — the failures, the rewrite, and the
+            measurements. If you've ever wondered what "we had to shard it" actually means in code, this
+            is that story with the diff stats attached.
+          </p>
+          <p>
+            Prerequisites: Part 1's vocabulary (mmap, WAL, quantization) or general systems comfort. No
+            Rust needed — every mechanism is described before it's used.
+          </p>
+
+          <h2>The moment it broke</h2>
+          <p>
+            v1's weaknesses were known and listed in Part 1 — one catalog for every root, images by
+            filename only, self-sizing pools, no honest progress. At a few thousand files each was a
+            footnote. Pointed at a 350,000-file home directory, they compounded:
+          </p>
+          <ul>
+            <li><strong>One SQLite database and one vector file</strong> meant every write from every root landed in the same lock domain, and one scan stream serialized discovery.</li>
+            <li><strong>The thread pools sized themselves.</strong> Walker, extraction workers, ONNX intra-op, whisper — each takes "the core count" by default; pointed at hours of work, they contended with each other and with the queries a file manager is supposed to answer instantly.</li>
+            <li><strong>An index that takes hours with a spinner</strong> is a trust problem. People kill processes like that.</li>
+          </ul>
+
+          <h2>The rewrite, in one commit</h2>
+          <p>
+            The v2 commit message is almost an outline: "per-root shards, CLIP vision lane, background
+            lifecycle, compute budget, live ETA." The diff: <strong>30 files, +2,496 −942</strong> — a
+            rewrite in the honest sense, with a new <code>shard.rs</code> (+171 lines) and
+            <code>vision.rs</code> (+89), and the search path reworked for cross-shard fusion.
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/ipic-architecture/arch-v2.png" width="2120" height="1280" loading="eager" alt="Diagram of the v2 ipic architecture: an engine supervising per-root shards that each own a catalog, three vector stores and an embed-writer thread, plus a query path with four retrieval lanes fused over global ranks and hydrated after fusion." />
+            <figcaption>How to read this: compare with Part 1's diagram. Top — the engine now supervises <strong>shards</strong>: one per configured root, each owning its catalog, its three stores (text 384-d, image 512-d, audio fingerprints 128-d) and its embed-writer thread, fed by a bounded channel. Bottom — the query path grew a fourth lane (vision) and now fuses over <strong>global ranks across shards</strong>, hydrating file metadata only for the final top-k.</figcaption>
+          </figure>
+
+          <h3>1. Shards: one per root, no shared mutex</h3>
+          <p>
+            Each configured root gets a shard — a directory named by a readable segment plus an FNV-1a
+            path hash — holding its own <code>catalog.db</code> and its <strong>three</strong> vector
+            stores (text, image, audio fingerprints). Roots scan, write, and serve queries in parallel
+            with nothing shared but the models. The embed-writer thread per shard receives extracted
+            chunks through a <strong>bounded channel of 8,192 deliveries</strong>: when embedding lags
+            extraction, producers block instead of buffering unbounded chunk text in RAM —
+            <em>backpressure as an architecture property</em>, for the price of one integer.
+          </p>
+
+          <h3>2. The compute budget</h3>
+          <p>
+            v2 makes the thread partition explicit: a <code>ComputeBudget</code> splits cores between the
+            global rayon pool (sized for query scans), extraction workers, ONNX intra-op threads, and
+            whisper workers. The design question it answers: when a query arrives mid-index, who yields?
+            Now it's a configured decision, not a race. On my 12-core machine the defaults leave search
+            saturated and everything else sized to fit alongside.
+          </p>
+
+          <h3>3. The CLIP vision lane — and the bug that starved it</h3>
+          <p>
+            Images finally became first-class: every image is decoded and downsampled in parallel, then
+            embedded by a <strong>CLIP ViT-B/32 vision tower</strong> (~150 MB with its text twin) into
+            the same 512-d space as the query text — "sunset over water" finds photographs by content.
+            The geometry that makes a shared text/image space work is
+            <a href="image-search-geometry.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">the subject of an earlier post</a>.
+            HEIC/HEIF/AVIF decode through ffmpeg when present; SVGs fall back to filename context,
+            honestly.
+          </p>
+          <p>
+            My favorite bug of the whole project lived here. The extraction workers claim jobs by
+            database id — and text files own the low ids. A mixed claim query therefore handed out
+            <em>nothing but text while any text remained</em>, and the single CLIP inference thread sat
+            fed on scraps while hundreds of thousands of paragraphs queued ahead of every image. The fix
+            is its own commit: <em>"round-robin image claiming so CLIP never starves behind text"</em> —
+            the pool now alternates text/image claims globally. A scheduling bug wearing a
+            machine-learning costume. (The speech lane runs
+            <a href="https://github.com/ggml-org/whisper.cpp" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">whisper.cpp</a>;
+            the vision lane follows the original
+            <a href="https://arxiv.org/abs/2103.00020" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">CLIP paper</a>.)
+          </p>
+
+          <h3>4. Measured, not vibes</h3>
+          <p>
+            Two days of polish commits follow — one of them just <strong>+18 −15 lines across two
+            files</strong> to "unblock bulk-index throughput at 350k-file scale," a reminder that
+            bottlenecks at scale are usually scheduling, not algorithms. (The same commit message notes
+            <em>gigatoken</em> was evaluated and rejected — no crates.io release, no WordPiece/BERT —
+            which is the kind of decision record I wish more repos kept.) The measured state, from the
+            repo's guide, on a 12-core Apple-Silicon laptop:
+          </p>
+          <table>
+            <thead><tr><th>Path</th><th>Measured</th><th>Conditions</th></tr></thead>
+            <tbody>
+              <tr><td>Scan discovery</td><td><strong>~2.5k files/s</strong></td><td>350k-file home directory, 8 shards, all cores</td></tr>
+              <tr><td>Query, end to end</td><td><strong>~30 ms</strong></td><td>models resident; query embedding dominates</td></tr>
+              <tr><td>Retrieval lanes</td><td><strong>4–10 ms</strong></td><td>all four lanes, vector scan sub-ms</td></tr>
+              <tr><td>i8 vs f32 recall</td><td><strong>within 1% @ rank 10</strong></td><td>1M-chunk corpus, documented benchmark · <a href="int8-quantization.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">why i8 barely hurts</a></td></tr>
+              <tr><td>Whisper transcription</td><td><strong>~35× realtime</strong></td><td>small.en q5_1, beam-5, Accelerate BLAS, CPU</td></tr>
+              <tr><td>Vector record</td><td><strong>396 bytes</strong></td><td>rowid u64 + scale f32 + 384 × i8</td></tr>
+            </tbody>
+          </table>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/ipic-architecture/app-search.png" width="1280" height="800" loading="lazy" alt="Real screenshot of the ipic application: a natural-language search box with results ranked across file types, and a status bar showing text and image vector counts, both embedders resident, and image content search active" />
+            <figcaption>The current app, mid-query (screenshot from the repo's docs): one box returning ranked hits across file types, per-lane badges on each result, and a status bar that now tells the truth about throughput and ETA while it works.</figcaption>
+          </figure>
+
+          <h2>The quiet design decisions</h2>
+          <p>
+            Two v2 details deserve their own paragraph because they prevent whole classes of future pain.
+            <strong>Model identity is part of storage:</strong> every vector store's header carries an
+            FNV hash of its embedder's identity; open a store built by a different model and the engine
+            wipes the derived data and re-queues the files — stale vectors from an old embedding space
+            can never leak into new rankings. And <strong>the UI reads a cache, not the
+            database:</strong> a 1 Hz progress reporter aggregates shard status into one snapshot the
+            frame loop clones, so rendering never contends with indexing for SQLite readers.
+          </p>
+
+          <h2>Shipped since this post</h2>
+          <p>
+            Three things landed after the rewrite that close loops this post left open. <strong>Deletions
+            now give the disk back:</strong> freed slots used to tombstone and recycle silently — correct,
+            but the file never shrank and the reported vector count never dropped, so deleting files
+            looked like a no-op. Status now reports <em>live</em> vectors (allocated minus the recycled
+            pool), and once that pool passes 1,024 slots and 25% of the file, the store rewrites itself
+            contiguously and remaps every SQLite slot reference in one transaction. The regression test
+            deletes 1,200 of 1,600 files and asserts <code>vectors.bin</code> shrinks below half.
+            <strong>The 350k-file home directory became the default</strong> rather than an experiment —
+            fresh installs scan the whole home directory behind a widened skip list. And <strong>v0.1.1
+            shipped as a macOS DMG</strong>: a tagged push builds an <code>-C target-cpu=apple-m1</code>
+            release on an arm64 runner and attaches the ad-hoc-signed bundle to the GitHub release.
+          </p>
+
+          <h2>What's still honest to want</h2>
+          <ul>
+            <li><strong>The vector scan is brute force.</strong> Right answer to ~10⁶ chunks per store at these latencies; past that, IVF or HNSW slots in behind the same store interface — the seam is deliberate.</li>
+            <li><strong>Non-speech audio is still acoustics, not semantics.</strong> Music mood and ambience matching remains future work; the README says so instead of the marketing department.</li>
+            <li><strong>Whisper on GPU is still a trap</strong> for this workload — one serialized state — which is why the CPU state pool remains the default at 35× realtime per worker.</li>
+          </ul>
+
+          <h2>Reproduce</h2>
+          <pre><code># macOS on Apple Silicon: grab the v0.1.1 DMG from Releases, or build from source:
+git clone https://github.com/anubhavagr/ipic
+cd ipic && cargo build --release
+./target/release/ipic-cli scan        # the whole home directory is the default scope now
+./target/release/ipic-cli status
+./target/release/ipic-cli search "sunset over water"</code></pre>
+          <p>
+            That's the series. Part 1 built the engine,
+            Part 2 derived the ranking, and this part paid for the scale. The through-line I'd keep for
+            any system like this: <em>make the constraints explicit, then make the measurements honest —
+            the architecture tends to design itself once both are true.</em>
+          </p>
+
+          <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
+            <a class="btn btn--ghost btn--sm" href="ipic-architecture.html">← Part 1: the v1 engine</a>
+            <a class="btn btn--ghost btn--sm" href="ipic-hybrid-search.html">← Part 2: the ranking math</a>
+            <a class="btn btn--primary btn--sm" href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">Repo on GitHub →</a>
+          </p>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div>© <span id="year"></span> Anubhav Agrawal</div>
+      <div class="footer__socials">
+        <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <button id="to-top" class="top-btn" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <script src="../assets/js/main.js?v=6"></script>
+</body>
+</html>

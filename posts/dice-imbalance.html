@@ -5,11 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>99.6% accuracy, completely useless. · Anubhav Agrawal</title>
   <meta name="description" content="Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error." />
+  <link rel="canonical" href="https://anubhavagr.github.io/posts/dice-imbalance.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="99.6% accuracy, completely useless" />
+  <meta property="og:description" content="Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error." />
+  <meta property="og:url" content="https://anubhavagr.github.io/posts/dice-imbalance.html" />
+  <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/dice-imbalance/ce_vs_dice.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "99.6% accuracy, completely useless",
+    "description": "Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error.",
+    "datePublished": "2026-08",
+    "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
+    "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
+    "mainEntityOfPage": "https://anubhavagr.github.io/posts/dice-imbalance.html",
+    "image": "https://anubhavagr.github.io/assets/img/posts/dice-imbalance/ce_vs_dice.png"
+  }
+  </script>
   <link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../assets/css/styles.css?v=3" />
+  <link rel="stylesheet" href="../assets/css/styles.css?v=5" />
 </head>
 <body>
   <header class="nav" id="nav">
@@ -19,7 +39,7 @@
       </a>
       <nav class="nav__links" id="nav-links" aria-label="Primary">
         <a href="../index.html#work">Work</a>
-        <a href="../index.html#blog">Blog</a>
+        <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
         <a href="../index.html#contact">Contact</a>
@@ -36,7 +56,7 @@
         <div class="article__head">
           <a class="back" href="../index.html#blog">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-            All posts
+            All blogs
           </a>
           <span class="card__tag">Medical CV · Losses</span>
           <h1 style="margin-top:.8rem;">99.6% accuracy, completely useless.</h1>
@@ -267,7 +287,7 @@ python export_and_benchmark.py  # export to TensorRT, benchmark vs the PyTorch b
           <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
             <a class="btn btn--primary btn--sm" href="gram-matrix.html">Next: the Gram matrix doesn't care where anything is →</a>
             <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/ArterySeg" target="_blank" rel="noopener">Repo on GitHub</a>
-            <a class="btn btn--ghost btn--sm" href="../projects/aimag.html">Where it ships: the AIMAG case study</a>
+            <a class="btn btn--ghost btn--sm" href="../projects/xray-superres.html">Where it ships: the case study</a>
           </p>
         </div>
       </div>
@@ -292,6 +312,6 @@ python export_and_benchmark.py  # export to TensorRT, benchmark vs the PyTorch b
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
   </button>
 
-  <script src="../assets/js/main.js?v=3"></script>
+  <script src="../assets/js/main.js?v=6"></script>
 </body>
 </html>
