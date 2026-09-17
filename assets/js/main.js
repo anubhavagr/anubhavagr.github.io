@@ -169,7 +169,6 @@
 
   /* ----------------------- Resume manifest --------------------------- */
   const resumeLinks = $$(".js-resume-link");
-  const updatedEl = $("#resume-updated");
   fetch("assets/resume.manifest.json", { cache: "no-cache" })
     .then((r) => (r.ok ? r.json() : null))
     .then((m) => {
@@ -180,13 +179,6 @@
           url.searchParams.set("v", String(m.sha).slice(0, 8));
           l.href = url.toString();
         });
-      }
-      if (updatedEl && m.updated) {
-        const d = new Date(m.updated);
-        if (!isNaN(d)) {
-          updatedEl.textContent = d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-          updatedEl.closest("[data-updated-wrap]")?.classList.remove("is-hidden");
-        }
       }
     })
     .catch(() => {});
