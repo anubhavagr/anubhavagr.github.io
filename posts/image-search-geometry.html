@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image search is geometry before it is learning · Anubhav Agrawal</title>
+  <title>Cosine similarity vs Euclidean distance: what matters for image search · Anubhav Agrawal</title>
   <meta name="description" content="How search-by-image works, explained from zero: embeddings, the cosine/L2 proof, what precision and recall actually diagnose, and the arithmetic that decides when exact search dies." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/image-search-geometry.html" />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="Image search is geometry before it is learning" />
+  <meta property="og:title" content="Cosine similarity vs Euclidean distance: what matters for image search" />
   <meta property="og:description" content="How search-by-image works, explained from zero: embeddings, the cosine/L2 proof, what precision and recall actually diagnose, and the arithmetic that decides when exact search dies." />
   <meta property="og:url" content="https://anubhavagr.github.io/posts/image-search-geometry.html" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/image-search-geometry/geometry.png" />
@@ -16,7 +16,7 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "Image search is geometry before it is learning",
+    "headline": "Cosine similarity vs Euclidean distance: what matters for image search",
     "description": "How search-by-image works, explained from zero: embeddings, the cosine/L2 proof, what precision and recall actually diagnose, and the arithmetic that decides when exact search dies.",
     "datePublished": "2026-08",
     "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
@@ -42,6 +42,7 @@
         <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#skills">Skills</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -59,7 +60,7 @@
             All blogs
           </a>
           <span class="card__tag">Retrieval · Embeddings</span>
-          <h1 style="margin-top:.8rem;">Image search is geometry before it is learning.</h1>
+          <h1 style="margin-top:.8rem;">Cosine similarity vs Euclidean distance: what matters for image search.</h1>
           <p class="sub">How "search by image" actually works — explained from zero, then stress-tested: I benchmarked five CNN backbones on the same FAISS pipeline, and every insight that mattered came from proofs and arithmetic, not from training.</p>
 
           <div class="article__meta">

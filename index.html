@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=8" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=9" />
 
   <script type="application/ld+json">
   {
@@ -86,75 +86,44 @@
       </div>
       <h1>Anubhav Agrawal</h1>
       <p class="identity__role">
-        AI engineer with 3+ years owning AI products end-to-end — from model
-        design to real-time production deployment and revenue. Computer vision
-        in medical imaging; LLM systems — RAG, agents, evaluation.
+        Engineer. Computer vision in production for a while, RAG systems now.
+        When something interests me I build it and benchmark it, and the
+        writeups end up here. Current thing is on-device search, everything
+        running locally, no cloud.
       </p>
       <p class="identity__index-label">On this site</p>
       <nav class="identity__index" aria-label="What's on this site">
-        <a href="#work"><b>01</b><span>Case studies — production RAG and X-ray vision</span><em>→</em></a>
-        <a href="#blog"><b>02</b><span>Writing — 9 measured engineering posts</span><em>→</em></a>
-        <a href="#lab"><b>03</b><span>Open source — ipic and 9 more repos</span><em>→</em></a>
-        <a href="#experience"><b>04</b><span>Experience — products, teams, 3 patents</span><em>→</em></a>
+        <a href="#blog"><b>01</b><span>My Writings</span><em>→</em></a>
+        <a href="#lab"><b>02</b><span>Projects</span><em>→</em></a>
+        <a href="#work"><b>03</b><span>Case studies</span><em>→</em></a>
+        <a href="#experience"><b>04</b><span>About me</span><em>→</em></a>
       </nav>
       <div class="identity__cta">
         <a class="btn btn--primary btn--sm" href="mailto:anubhavagr.mail@gmail.com">Email me →</a>
         <a class="btn btn--ghost btn--sm js-resume-link" href="assets/anubhav-agrawal-resume.pdf" download>Résumé (PDF)</a>
       </div>
-      <p class="identity__stats">3+ yrs shipping · 2 products end-to-end · 6 ML engineers led</p>
+      <p class="identity__stats">5+ yrs trying to keep up with AI · Built and shipped systems end-to-end</p>
     </header>
     </aside>
 
     <!-- ------------------------------------------------------------ Content stream -->
     <div class="content">
 
-    <!-- ------------------------------------------------------------ WORK -->
-    <section class="section" id="work">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">01</span><span class="label">Work</span></h2>
-      </div>
-      <div id="work-grid">
-
-        <a class="case-card case-card--featured reveal" href="projects/adaptive-rag.html">
-          <span class="case-card__tag">LLMs · Retrieval · Production</span>
-          <h3>Adaptive RAG — a stateful interviewer that listens</h3>
-          <p>Built the retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth. Live for 500+ concurrent users at 99.9% uptime.</p>
-          <div class="case-card__kpis">
-            <div><b>0.95</b><span>Recall@5</span></div>
-            <div><b>0.8s</b><span>p50 latency</span></div>
-            <div><b>−68%</b><span>faster</span></div>
-            <div><b>500+</b><span>users</span></div>
-          </div>
-          <span class="case-card__arrow">read case study →</span>
-        </a>
-
-        <a class="case-card case-card--featured reveal" href="projects/xray-superres.html">
-          <span class="case-card__tag">Computer Vision · Medical AI</span>
-          <h3>Real-time blind X-ray image super-resolution</h3>
-          <p>Super-resolution and denoising on live cath-lab feeds — owned end-to-end from model R&amp;D through INT8/FP16 quantization to TensorRT/C++ serving, plus the automatic QCA pipeline cardiologists use mid-procedure. Three patents applied for.</p>
-          <div class="case-card__kpis">
-            <div><b>$200K+</b><span>ARR</span></div>
-            <div><b>600+</b><span>FPS · RTX 4090</span></div>
-            <div><b>−70%</b><span>latency</span></div>
-            <div><b>0.94</b><span>Dice · QCA</span></div>
-          </div>
-          <span class="case-card__arrow">read case study →</span>
-        </a>
-      </div>
-    </section>
-
     <!-- ------------------------------------------------------------ WRITING -->
     <section class="section" id="blog">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">02</span><span class="label">Blogs</span></h2>
+        <h2 class="section__title"><span class="kicker">01</span><span class="label">Blogs</span></h2>
+        <p class="section__sub">Engineering write-ups where the math is shown and every number is
+        measured — LLM inference on a MacBook Pro, INT8 quantization, retrieval geometry, medical
+        segmentation, and the ipic build log.</p>
       </div>
       <div id="posts-grid">
         <a class="post-row reveal" href="posts/ipic-v2-scale.html">
           <div class="post-row__left">
-            <span class="post-row__part">ipic 3</span>
+            <span class="post-row__part">Performance</span>
           </div>
           <div class="post-row__body">
-            <h3>What 350,000 files did to ipic.<span class="post-row__arrow">→</span></h3>
+            <h3>Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane<span class="post-row__arrow">→</span></h3>
             <p>Part 3: the v2 rewrite — per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, measured results at 350k-file scale, and what shipped after: store compaction, whole-home default scope, v0.1.1 as a macOS DMG.</p>
           </div>
         </a>
@@ -163,7 +132,7 @@
             <span class="post-row__part">Part 1</span>
           </div>
           <div class="post-row__body">
-            <h3>A MacBook Pro can serve an LLM. Then the second user arrives.<span class="post-row__arrow">→</span></h3>
+            <h3>Serving an LLM on a MacBook Pro: mlx-lm vs llama.cpp, from 1 user to 32<span class="post-row__arrow">→</span></h3>
             <p>mlx-lm vs llama.cpp under 1 fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock.</p>
           </div>
         </a>
@@ -172,7 +141,7 @@
             <span class="post-row__part">Part 2</span>
           </div>
           <div class="post-row__body">
-            <h3>3× the memory bought me 9%.<span class="post-row__arrow">→</span></h3>
+            <h3>Multi-instance LLM serving: why 3× the memory bought only 9% more throughput<span class="post-row__arrow">→</span></h3>
             <p>K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus.</p>
           </div>
         </a>
@@ -181,7 +150,7 @@
             <span class="post-row__part">Inference</span>
           </div>
           <div class="post-row__body">
-            <h3>256 levels is plenty. Here's the math that proves it.<span class="post-row__arrow">→</span></h3>
+            <h3>How INT8 quantization works: calibration, error bounds, and why accuracy barely drops<span class="post-row__arrow">→</span></h3>
             <p>What INT8 quantization is and why it barely hurts — the affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB.</p>
           </div>
         </a>
@@ -190,7 +159,7 @@
             <span class="post-row__part">Retrieval</span>
           </div>
           <div class="post-row__body">
-            <h3>Image search is geometry before it is learning.<span class="post-row__arrow">→</span></h3>
+            <h3>Cosine similarity vs Euclidean distance: what matters for image search<span class="post-row__arrow">→</span></h3>
             <p>How search-by-image works, from zero: the cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and the arithmetic that decides when exact search dies.</p>
           </div>
         </a>
@@ -199,7 +168,7 @@
             <span class="post-row__part">Medical CV</span>
           </div>
           <div class="post-row__body">
-            <h3>99.6% accuracy, completely useless.<span class="post-row__arrow">→</span></h3>
+            <h3>Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works<span class="post-row__arrow">→</span></h3>
             <p>In medical segmentation the target — a coronary vessel — is 0.39% of the pixels, and the standard loss trains a model that's great at everything else. Derived, then fixed with Dice.</p>
           </div>
         </a>
@@ -208,25 +177,25 @@
             <span class="post-row__part">Deep Learning</span>
           </div>
           <div class="post-row__body">
-            <h3>The Gram matrix doesn't care where anything is.<span class="post-row__arrow">→</span></h3>
+            <h3>How neural style transfer works: VGG features, Gram matrices, and receptive fields<span class="post-row__arrow">→</span></h3>
             <p>Style transfer explained from zero — and its key object provably discards all position information (measured: 1.7e-18). Plus the receptive-field arithmetic behind the layer choices.</p>
           </div>
         </a>
         <a class="post-row reveal" href="posts/ipic-architecture.html">
           <div class="post-row__left">
-            <span class="post-row__part">ipic 1</span>
+            <span class="post-row__part">Rust</span>
           </div>
           <div class="post-row__body">
-            <h3>A file manager that understands your files — entirely offline.<span class="post-row__arrow">→</span></h3>
+            <h3>On-device semantic file search in Rust: the ipic engine architecture<span class="post-row__arrow">→</span></h3>
             <p>Part 1 of the ipic build log: the first engine — 3 retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, crash-safety by job state. One focused week, 23 commits.</p>
           </div>
         </a>
         <a class="post-row reveal" href="posts/ipic-hybrid-search.html">
           <div class="post-row__left">
-            <span class="post-row__part">ipic 2</span>
+            <span class="post-row__part">Hybrid Search</span>
           </div>
           <div class="post-row__body">
-            <h3>Four retrieval lanes, one formula to fuse them.<span class="post-row__arrow">→</span></h3>
+            <h3>Hybrid search with reciprocal rank fusion: semantic, keyword, filename, and vision lanes<span class="post-row__arrow">→</span></h3>
             <p>Part 2: the ranking math — weighted reciprocal rank fusion across semantic, vision, keyword and filename lanes, derived from requirements and computed on a worked example. No re-ranker, 4–10 ms.</p>
           </div>
         </a>
@@ -237,7 +206,10 @@
     <!-- ------------------------------------------------------------ OPEN SOURCE -->
     <section class="section" id="lab">
       <div class="section__head">
-        <h2 class="section__title"><span class="kicker">03</span><span class="label">Open source</span></h2>
+        <h2 class="section__title"><span class="kicker">02</span><span class="label">Open source</span></h2>
+        <p class="section__sub">Side projects with real inputs and real outputs — ipic, a file
+        manager that searches your entire home directory by meaning, fully offline; plus
+        colorization, style transfer, and stitching rebuilt from the papers.</p>
       </div>
       <div id="lab-grid" class="grid-2">
 
@@ -347,6 +319,44 @@
       <p style="margin-top:1.2rem;">
         <a class="text-link" href="https://github.com/anubhavagr?tab=repositories" target="_blank" rel="noopener">All repositories →</a>
       </p>
+    </section>
+
+    <!-- ------------------------------------------------------------ WORK -->
+    <section class="section" id="work">
+      <div class="section__head">
+        <h2 class="section__title"><span class="kicker">03</span><span class="label">Work</span></h2>
+        <p class="section__sub">Two production AI systems owned end-to-end — an adaptive-RAG
+        interviewer serving 500+ concurrent users, and real-time X-ray restoration on live
+        cath-lab feeds. The numbers on each card are the numbers they run at.</p>
+      </div>
+      <div id="work-grid">
+
+        <a class="case-card case-card--featured reveal" href="projects/adaptive-rag.html">
+          <span class="case-card__tag">LLMs · Retrieval · Production</span>
+          <h3>Adaptive RAG — a stateful interviewer that listens</h3>
+          <p>Built the retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth. Live for 500+ concurrent users at 99.9% uptime.</p>
+          <div class="case-card__kpis">
+            <div><b>0.95</b><span>Recall@5</span></div>
+            <div><b>0.8s</b><span>p50 latency</span></div>
+            <div><b>−68%</b><span>faster</span></div>
+            <div><b>500+</b><span>users</span></div>
+          </div>
+          <span class="case-card__arrow">read case study →</span>
+        </a>
+
+        <a class="case-card case-card--featured reveal" href="projects/xray-superres.html">
+          <span class="case-card__tag">Computer Vision · Medical AI</span>
+          <h3>Real-time blind X-ray image super-resolution</h3>
+          <p>Super-resolution and denoising on live cath-lab feeds — owned end-to-end from model R&amp;D through INT8/FP16 quantization to TensorRT/C++ serving, plus the automatic QCA pipeline cardiologists use mid-procedure. Three patents applied for.</p>
+          <div class="case-card__kpis">
+            <div><b>$200K+</b><span>ARR</span></div>
+            <div><b>600+</b><span>FPS · RTX 4090</span></div>
+            <div><b>−70%</b><span>latency</span></div>
+            <div><b>0.94</b><span>Dice · QCA</span></div>
+          </div>
+          <span class="case-card__arrow">read case study →</span>
+        </a>
+      </div>
     </section>
 
     <!-- ------------------------------------------------------------ EXPERIENCE -->

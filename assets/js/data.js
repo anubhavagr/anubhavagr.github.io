@@ -13,7 +13,7 @@
 window.SITE_DATA = {
   cases: [
     {
-      title: "Adaptive RAG — a Stateful Interviewer That Listens",
+      title: "Adaptive RAG — a stateful interviewer that listens",
       href: "projects/adaptive-rag.html",
       tag: "LLMs · Retrieval · Production",
       blurb:
@@ -44,15 +44,15 @@ window.SITE_DATA = {
 
   posts: [
     {
-      title: "What 350,000 files did to ipic.",
+      title: "Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane",
       href: "posts/ipic-v2-scale.html",
       img: "assets/img/posts/ipic-architecture/app-search.png",
       alt: "Real screenshot of the ipic application: a natural-language search returning ranked hits across file types with live status",
-      tag: "ipic 3",
+      tag: "Performance",
       dek: "Part 3: the v2 rewrite — per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, measured results at 350k-file scale, and what shipped after: store compaction, whole-home default scope, v0.1.1 as a macOS DMG."
     },
     {
-      title: "A MacBook Pro can serve an LLM. Then the second user arrives.",
+      title: "Serving an LLM on a MacBook Pro: mlx-lm vs llama.cpp, from 1 user to 32",
       href: "posts/inference-lab.html",
       img: "assets/img/posts/inference-lab/sweep_throughput.png",
       alt: "Line chart showing aggregate throughput staying flat from 1 concurrent user to 32",
@@ -60,7 +60,7 @@ window.SITE_DATA = {
       dek: "mlx-lm vs llama.cpp under 1 fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock."
     },
     {
-      title: "3× the memory bought me 9%.",
+      title: "Multi-instance LLM serving: why 3× the memory bought only 9% more throughput",
       href: "posts/inference-lab-2.html",
       img: "assets/img/posts/inference-lab/dispatch_scaling.png",
       alt: "Dispatch benchmark chart from Part 2 of the inference-lab series",
@@ -68,7 +68,7 @@ window.SITE_DATA = {
       dek: "K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus."
     },
     {
-      title: "256 levels is plenty. Here's the math that proves it.",
+      title: "How INT8 quantization works: calibration, error bounds, and why accuracy barely drops",
       href: "posts/int8-quantization.html",
       img: "assets/img/posts/int8-quantization/calibration.png",
       alt: "Calibration experiment: activation histogram with three candidate ranges, and error curves versus clip threshold",
@@ -76,7 +76,7 @@ window.SITE_DATA = {
       dek: "What INT8 quantization is and why it barely hurts — the affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB."
     },
     {
-      title: "Image search is geometry before it is learning.",
+      title: "Cosine similarity vs Euclidean distance: what matters for image search",
       href: "posts/image-search-geometry.html",
       img: "assets/img/posts/image-search-geometry/geometry.png",
       alt: "Unit-sphere geometry of embeddings: squared distance versus cosine similarity, and two classes separated by angle",
@@ -84,7 +84,7 @@ window.SITE_DATA = {
       dek: "How search-by-image works, from zero: the cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and the arithmetic that decides when exact search dies."
     },
     {
-      title: "99.6% accuracy, completely useless.",
+      title: "Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works",
       href: "posts/dice-imbalance.html",
       img: "assets/img/posts/dice-imbalance/ce_vs_dice.png",
       alt: "Cross-entropy and Dice loss curves showing opposite optima under class imbalance",
@@ -92,7 +92,7 @@ window.SITE_DATA = {
       dek: "In medical segmentation the target — a coronary vessel — is 0.39% of the pixels, and the standard loss trains a model that's great at everything else. Derived, then fixed with Dice."
     },
     {
-      title: "The Gram matrix doesn't care where anything is.",
+      title: "How neural style transfer works: VGG features, Gram matrices, and receptive fields",
       href: "posts/gram-matrix.html",
       img: "assets/img/posts/gram-matrix/permutation_invariance.png",
       alt: "Gram matrices before and after shuffling every feature position, unchanged to machine precision",
@@ -100,19 +100,19 @@ window.SITE_DATA = {
       dek: "Style transfer explained from zero — and its key object provably discards all position information (measured: 1.7e-18). Plus the receptive-field arithmetic behind the layer choices."
     },
     {
-      title: "A file manager that understands your files — entirely offline.",
+      title: "On-device semantic file search in Rust: the ipic engine architecture",
       href: "posts/ipic-architecture.html",
       img: "assets/img/posts/ipic-architecture/arch.png",
       alt: "Diagram of the v1 ipic engine: one indexing pipeline feeding SQLite FTS5 and an i8 vector store, and a query path with three retrieval lanes fused by weighted reciprocal rank fusion",
-      tag: "ipic 1",
+      tag: "Rust",
       dek: "Part 1 of the ipic build log: the first engine — 3 retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, crash-safety by job state. One focused week, 23 commits."
     },
     {
-      title: "Four retrieval lanes, one formula to fuse them.",
+      title: "Hybrid search with reciprocal rank fusion: semantic, keyword, filename, and vision lanes",
       href: "posts/ipic-hybrid-search.html",
       img: "assets/img/posts/ipic-hybrid-search/rrf_fusion.png",
       alt: "Reciprocal rank fusion: computed fused scores for seven documents across semantic, vision and keyword lanes, and the effect of the constant k",
-      tag: "ipic 2",
+      tag: "Hybrid Search",
       dek: "Part 2: the ranking math — weighted reciprocal rank fusion across semantic, vision, keyword and filename lanes, derived from requirements and computed on a worked example. No re-ranker, 4–10 ms."
     }
   ],
