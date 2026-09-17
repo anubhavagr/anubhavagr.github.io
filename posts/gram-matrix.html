@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Gram matrix doesn't care where anything is · Anubhav Agrawal</title>
+  <title>How neural style transfer works: VGG features, Gram matrices, and receptive fields · Anubhav Agrawal</title>
   <meta name="description" content="Neural style transfer explained from zero: what the Gatys method does, why the Gram matrix captures style, the permutation-invariance proof (measured at 1.7e-18), the gradients, and the receptive-field arithmetic behind the layer choices." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/gram-matrix.html" />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="The Gram matrix doesn't care where anything is" />
+  <meta property="og:title" content="How neural style transfer works: VGG features, Gram matrices, and receptive fields" />
   <meta property="og:description" content="Neural style transfer explained from zero: what the Gatys method does, why the Gram matrix captures style, the permutation-invariance proof (measured at 1.7e-18), the gradients, and the receptive-field arithmetic behind the layer choices." />
   <meta property="og:url" content="https://anubhavagr.github.io/posts/gram-matrix.html" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/gram-matrix/permutation_invariance.png" />
@@ -16,7 +16,7 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "The Gram matrix doesn't care where anything is",
+    "headline": "How neural style transfer works: VGG features, Gram matrices, and receptive fields",
     "description": "Neural style transfer explained from zero: what the Gatys method does, why the Gram matrix captures style, the permutation-invariance proof (measured at 1.7e-18), the gradients, and the receptive-field arithmetic behind the layer choices.",
     "datePublished": "2026-08",
     "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
@@ -42,6 +42,7 @@
         <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#skills">Skills</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -59,7 +60,7 @@
             All blogs
           </a>
           <span class="card__tag">Deep Learning · Perception</span>
-          <h1 style="margin-top:.8rem;">The Gram matrix doesn't care where anything is.</h1>
+          <h1 style="margin-top:.8rem;">How neural style transfer works: VGG features, Gram matrices, and receptive fields.</h1>
           <p class="sub">Neural style transfer — render a photo in a painting's brushwork — was born in 2015 from one clever use of a classification network's innards. I reimplemented it from scratch; this post explains the whole method from zero, including the one object that makes "style" mathematically distinct from "content."</p>
 
           <div class="article__meta">

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3× the memory bought me 9% — Part 2 · Anubhav Agrawal</title>
+  <title>Multi-instance LLM serving: why 3× the memory bought only 9% more throughput — Part 2 · Anubhav Agrawal</title>
   <meta name="description" content="Part 2: I built the fix everyone suggests — K process-isolated LLM instances behind 1 queue — and measured it at K=1,2,3 on an M4 Pro. 3× the RAM bought +9% throughput. The arithmetic says why: 1 instance already streams ~250 GB/s of the M4 Pro's ~273 GB/s memory bandwidth. The bus was the ceiling all along." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/inference-lab-2.html" />
   <meta property="og:type" content="article" />
@@ -42,6 +42,7 @@
         <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#skills">Skills</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -59,7 +60,7 @@
             All blogs
           </a>
           <span class="card__tag">LLMs · Inference · Part 2 of 2</span>
-          <h1 style="margin-top:.8rem;">3× the memory bought me 9%.</h1>
+          <h1 style="margin-top:.8rem;">Multi-instance LLM serving: why 3× the memory bought only 9% more throughput.</h1>
           <p class="sub">I built the fix everyone suggests for the flat line in <a href="inference-lab.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Part 1</a> — K process-isolated LLM instances behind 1 queue — and measured it at K = 1, 2, 3. The real ceiling on Apple Silicon isn’t the lock. It’s the memory bus, and the arithmetic proves it.</p>
 
           <div class="article__meta">

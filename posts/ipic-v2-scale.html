@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>What 350,000 files did to ipic · Anubhav Agrawal</title>
+  <title>Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane · Anubhav Agrawal</title>
   <meta name="description" content="Part 3 of the ipic series: the v2 rewrite — per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, and measured results at 350,000-file scale." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/ipic-v2-scale.html" />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="What 350,000 files did to ipic" />
+  <meta property="og:title" content="Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane" />
   <meta property="og:description" content="Per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, and measured results at 350,000-file scale." />
   <meta property="og:url" content="https://anubhavagr.github.io/posts/ipic-v2-scale.html" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/ipic-architecture/arch-v2.png" />
@@ -21,7 +21,7 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "What 350,000 files did to ipic",
+    "headline": "Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane",
     "description": "Part 3 of the ipic build log: per-root shards, bounded-channel backpressure, a CLIP vision lane, a compute budget, and measured results at 350,000-file scale.",
     "datePublished": "2026-09-04",
     "dateModified": "2026-09-16",
@@ -43,6 +43,7 @@
         <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#skills">Skills</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -59,8 +60,8 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
             All blogs
           </a>
-          <span class="card__tag">ipic · Part 3 of 3</span>
-          <h1 style="margin-top:.8rem;">What 350,000 files did to ipic.</h1>
+          <span class="card__tag">Performance · Part 3 of 3</span>
+          <h1 style="margin-top:.8rem;">Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane.</h1>
           <p class="sub">v1 of ipic was a single pipeline with one catalog and three retrieval lanes, and it felt fast — until it met my actual home directory. This part is the v2 rewrite: per-root shards, bounded-channel backpressure, a CLIP vision lane that nearly starved to death, a compute budget, and the measured numbers that came out the other side.</p>
 
           <div class="article__meta">
@@ -218,7 +219,7 @@
             deletes 1,200 of 1,600 files and asserts <code>vectors.bin</code> shrinks below half.
             <strong>The 350k-file home directory became the default</strong> rather than an experiment —
             fresh installs scan the whole home directory behind a widened skip list. And <strong>v0.1.1
-            shipped as a macOS DMG</strong>: a tagged push builds an <code>-C target-cpu=apple-m1</code>
+            shipped as a macOS DMG</strong>: a tagged push builds a <code>-C target-cpu=apple-m1</code>
             release on an arm64 runner and attaches the ad-hoc-signed bundle to the GitHub release.
           </p>
 

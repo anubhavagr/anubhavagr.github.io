@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>256 levels is plenty. Here's the math that proves it · Anubhav Agrawal</title>
+  <title>How INT8 quantization works: calibration, error bounds, and why accuracy barely drops · Anubhav Agrawal</title>
   <meta name="description" content="What INT8 quantization actually is, derived from scratch for a reader who knows what a neural network is but has never shipped one: the affine map, the error bound, calibration, and per-channel weights." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/int8-quantization.html" />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="256 levels is plenty. Here's the math that proves it" />
+  <meta property="og:title" content="How INT8 quantization works: calibration, error bounds, and why accuracy barely drops" />
   <meta property="og:description" content="What INT8 quantization actually is, derived from scratch for a reader who knows what a neural network is but has never shipped one: the affine map, the error bound, calibration, and per-channel weights." />
   <meta property="og:url" content="https://anubhavagr.github.io/posts/int8-quantization.html" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/int8-quantization/calibration.png" />
@@ -16,7 +16,7 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "256 levels is plenty. Here's the math that proves it",
+    "headline": "How INT8 quantization works: calibration, error bounds, and why accuracy barely drops",
     "description": "What INT8 quantization actually is, derived from scratch for a reader who knows what a neural network is but has never shipped one: the affine map, the error bound, calibration, and per-channel weights.",
     "datePublished": "2026-08",
     "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
@@ -42,6 +42,7 @@
         <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#skills">Skills</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -59,7 +60,7 @@
             All blogs
           </a>
           <span class="card__tag">Inference · Quantization</span>
-          <h1 style="margin-top:.8rem;">256 levels is plenty. Here's the math that proves it.</h1>
+          <h1 style="margin-top:.8rem;">How INT8 quantization works: calibration, error bounds, and why accuracy barely drops.</h1>
           <p class="sub">A from-scratch derivation of INT8 quantization — the technique that shrinks a neural network 4× and makes it run on integer hardware — written for someone who knows what a neural network is but has never had to ship one to production.</p>
 
           <div class="article__meta">

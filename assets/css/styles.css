@@ -243,6 +243,9 @@ code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
 /* ----------------------------------------------------------------- Sections */
 .section { padding-block: 3.25rem 0.5rem; }
 .section + .section { border-top: 1px solid var(--border-soft); }
+/* The first section in the content column starts flush — the wrap already
+   carries the page's top padding. */
+.content > .section:first-of-type { padding-top: 0; }
 .section__head { margin-bottom: 2rem; }
 .section__title {
   font-size: clamp(1.45rem, 1.2rem + 1vw, 1.7rem);

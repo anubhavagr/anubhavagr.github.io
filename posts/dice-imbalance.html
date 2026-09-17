@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>99.6% accuracy, completely useless. · Anubhav Agrawal</title>
+  <title>Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works · Anubhav Agrawal</title>
   <meta name="description" content="Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/dice-imbalance.html" />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="99.6% accuracy, completely useless" />
+  <meta property="og:title" content="Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works" />
   <meta property="og:description" content="Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error." />
   <meta property="og:url" content="https://anubhavagr.github.io/posts/dice-imbalance.html" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/dice-imbalance/ce_vs_dice.png" />
@@ -16,7 +16,7 @@
   {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "headline": "99.6% accuracy, completely useless",
+    "headline": "Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works",
     "description": "Why the standard loss function fails on medical image segmentation, derived from zero: class imbalance in cross-entropy, the Dice loss that self-normalizes, and the thin-vessel boundary law that punishes every pixel of error.",
     "datePublished": "2026-08",
     "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
@@ -42,6 +42,7 @@
         <a href="../index.html#blog">Blogs</a>
         <a href="../index.html#lab">Open source</a>
         <a href="../index.html#experience">Experience</a>
+        <a href="../index.html#skills">Skills</a>
         <a href="../index.html#contact">Contact</a>
       </nav>
       <div class="nav__cta">
@@ -59,7 +60,7 @@
             All blogs
           </a>
           <span class="card__tag">Medical CV · Losses</span>
-          <h1 style="margin-top:.8rem;">99.6% accuracy, completely useless.</h1>
+          <h1 style="margin-top:.8rem;">Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works.</h1>
           <p class="sub">Teaching a network to outline coronary arteries in X-ray video taught me how a loss function can quietly starve the very thing you're trying to detect. The full derivation — why cross-entropy fails at 1:255 imbalance, why Dice doesn't, and why thin vessels punish every single pixel of boundary error.</p>
 
           <div class="article__meta">
