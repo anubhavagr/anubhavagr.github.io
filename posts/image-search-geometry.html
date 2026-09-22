@@ -74,14 +74,11 @@
         <div class="prose">
           <div class="callout">
             <div class="h">TL;DR</div>
-            <p style="margin:0;">
-              Modern image search turns every picture into a vector, then finds nearby vectors. Once you see
-              that, three things become provable rather than mystical: <strong>cosine and L2 similarity give
-              identical rankings</strong> after normalization (two-line proof); <strong>precision 1.00 with
-              recall 0.87 tells you exactly what kind of failure you have</strong> (ranking, not retrieval);
-              and <strong>exact search dies on arithmetic you can do on paper</strong> (4×10⁸ distance
-              computations per query at 100K images — 2.5% of that with an IVF index).
-            </p>
+            <ul style="margin:.35rem 0 0; padding-left:1.15rem;">
+              <li style="margin:.3rem 0;"><strong>Cosine and Euclidean distance give identical rankings</strong> once vectors are normalized — provable in two lines.</li>
+              <li style="margin:.3rem 0;"><strong>Precision 1.00 with recall 0.87 is a diagnosis</strong>, not a disappointment: the failure is ranking, not confusion — and the two have different fixes.</li>
+              <li style="margin:.3rem 0;"><strong>Exact search dies on arithmetic you can do on paper</strong>: 4×10⁸ distance computations per query at 100K images. An IVF index does 2.5% of that.</li>
+            </ul>
           </div>
 
           <h2>What this post is about</h2>
@@ -102,7 +99,7 @@
           </p>
           <ul>
             <li>what an <strong>embedding</strong> is and why "closer vector = similar image" is even coherent;</li>
-            <li>a two-line proof that the two similarity metrics everyone mentions — <strong>cosine and L2 distance</strong> — are the same thing;</li>
+            <li>a two-line proof that the two similarity metrics everyone mentions — <strong>cosine similarity and Euclidean (L2) distance</strong> — are the same thing;</li>
             <li>how to read <strong>precision and recall</strong> for a retrieval system, and what their combination diagnoses;</li>
             <li>the <strong>cost arithmetic</strong> that forces big systems away from exact search.</li>
           </ul>
@@ -157,10 +154,10 @@
             The rest of the post is about those.
           </p>
 
-          <h2>Result 1: cosine and L2 are the same ranking</h2>
+          <h2>Result 1: cosine similarity and Euclidean distance give the same ranking</h2>
           <p>
             You'll see image-search codebases (including mine) normalize every vector to length 1 and then
-            search by <em>L2 distance</em> — while every tutorial talks about <em>cosine similarity</em>.
+            search by <em>Euclidean distance</em> (L2) — while every tutorial talks about <em>cosine similarity</em>.
             These produce identical rankings, and the proof is two lines of algebra.
           </p>
           <p>
@@ -183,8 +180,8 @@
           </ul>
 
           <figure class="figure">
-            <img src="../assets/img/posts/image-search-geometry/geometry.png" alt="Left: curve of squared L2 distance versus cosine similarity for unit vectors, with three marked points. Right: unit circle scatter plot of two embedding classes with an angular decision boundary and a query point." />
-            <figcaption>How to read this: left is the equation above drawn as a curve — the three dots are the pairs listed in the text. Right is a fake 2-D embedding space standing in for the real 1000-dimensional one: two image classes (dots by color) land in different directions from the origin, so a query (star) is answered by angle alone. The dashed lines are the natural decision boundary.</figcaption>
+            <img src="../assets/img/posts/image-search-geometry/geometry.png?v=2" alt="Left: squared Euclidean distance plotted against cosine similarity for unit vectors — one curve, with the region where similar images live shaded. Right: a 2-D embedding space with two image classes as point clouds in opposite directions, a query star, and a hollow point showing that halving a vector's length does not change its ranking." />
+            <figcaption><strong>a · One number determines the other.</strong> The equation as a curve: distance is fully determined by cosine similarity, and retrieval-quality neighbors (cos θ ≥ 0.90, shaded) all sit in its flat region. <strong>b · Only the angle matters.</strong> A 2-D stand-in for the real 1000-dimensional space: two classes are two <em>directions</em>, the query is answered by angle alone, and the hollow point shows why — same direction, half the length, identical ranking.</figcaption>
           </figure>
 
           <p>
@@ -208,14 +205,18 @@
             index and are findable — they simply scored below the cut. <strong>All error is ranking error,
             none is confusion error.</strong>
           </p>
+          <div class="callout">
+            <div class="h">Reading the pair</div>
+            <ul style="margin:.35rem 0 0; padding-left:1.15rem;">
+              <li style="margin:.3rem 0;"><strong>P high, R low</strong> — clean embeddings, conservative ranking. A systems problem: return more neighbors, lower the threshold, tighten within-class compactness. Mechanical fixes.</li>
+              <li style="margin:.3rem 0;"><strong>P low</strong> — embeddings genuinely mix classes. A model problem: no index knob helps; you need a better backbone.</li>
+            </ul>
+          </div>
+
           <p>
-            Why does that distinction matter? Because it dictates the fix. If precision were the problem,
-            you'd need a better backbone — the embeddings genuinely mix classes. With ranking-only error,
-            the knobs are mechanical: return more neighbors per query, lower the similarity threshold, or
-            improve within-class compactness (via fine-tuning). Compare two hypothetical systems with
-            similar F1: P 0.90 / R 0.90 (confused embeddings — model problem) vs my P 1.00 / R 0.87
-            (conservative ranking — systems problem). Same F1, completely different to-do list. That's why
-            I read the precision/recall pair <em>shape</em> before any single number.
+            That's why the pair's <em>shape</em> beats any single number. Two systems with the same F1 —
+            P 0.90 / R 0.90 versus my P 1.00 / R 0.87 — carry opposite diagnoses: the first has confused
+            embeddings, the second merely ranks conservatively. Same score, completely different to-do list.
           </p>
 
           <h2>Result 3: the arithmetic that kills exact search</h2>
@@ -239,16 +240,16 @@
           </p>
 
           <figure class="figure">
-            <img src="../assets/img/posts/image-search-geometry/cost.png" alt="Left: scatter plot of backbone parameter count versus measured query latency for five CNNs, with perfect rank correlation. Right: log-log plot of distance computations per query versus index size for Flat and IVF search." />
-            <figcaption>How to read this: left — my measured query latency (vertical) against each backbone's parameter count (horizontal, from torchvision). The ordering is a perfect rank correlation: at this scale the embedding pass dwarfs the FAISS lookup. Right — distance computations per query as your database grows: the gray line is exact search (linear), the accent line is IVF (proportional to √N). The gap is ≈400× at 10M images.</figcaption>
+            <img src="../assets/img/posts/image-search-geometry/cost.png?v=2" alt="Left: measured query latency versus parameter count for five CNN backbones, ordered perfectly along a trade-off line from MobileNetV2 to InceptionV3. Right: distance computations per query versus index size on log-log axes — exact search grows linearly with N, IVF with the square root of N, a 400x gap at 10 million vectors." />
+            <figcaption><strong>a · Latency tracks the backbone (ρ = 1.00).</strong> Five backbones, one trade-off line: the recall you buy at InceptionV3 costs +67% latency over MobileNetV2 (the two highlighted endpoints). <strong>b · Exact search grows with N; IVF with √N.</strong> The shaded gap is ≈400× less work at 10M images, tunable back toward exactness via nprobe.</figcaption>
           </figure>
 
           <p>
             The left panel is the sleeper insight of the whole experiment: <strong>latency is decided by
-            the backbone, not the search</strong>. The CNN forward pass dominates; FAISS is a rounding
-            error. Which turns backbone choice into a quantified engineering decision: InceptionV3 buys
-            +0.5 percentage points of recall over MobileNetV2 for 67% more latency. Take that trade or
-            don't — but now it's a line item, not a benchmark trophy.
+            the backbone, not the search</strong> — the CNN forward pass dominates, and FAISS is a
+            rounding error. The dashed line between the two highlighted endpoints is the whole decision:
+            InceptionV3 buys +0.5 percentage points of recall over MobileNetV2 for 67% more latency.
+            Take that trade or don't — but it's a line item now, not a benchmark trophy.
           </p>
 
           <h2>Same math, bigger scale</h2>
