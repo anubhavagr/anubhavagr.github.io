@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cosine similarity vs Euclidean distance: what matters for image search · Anubhav Agrawal</title>
-  <meta name="description" content="How search-by-image works, explained from zero: embeddings, the cosine/L2 proof, what precision and recall actually diagnose, and the arithmetic that decides when exact search dies." />
+  <meta name="description" content="How search-by-image works, from first principles: every picture becomes a point in space, one division makes cosine and Euclidean distance rank identically, and simple arithmetic decides when exact search dies." />
   <link rel="canonical" href="https://anubhavagr.github.io/posts/image-search-geometry.html" />
   <meta property="og:type" content="article" />
   <meta property="og:title" content="Cosine similarity vs Euclidean distance: what matters for image search" />
-  <meta property="og:description" content="How search-by-image works, explained from zero: embeddings, the cosine/L2 proof, what precision and recall actually diagnose, and the arithmetic that decides when exact search dies." />
+  <meta property="og:description" content="How search-by-image works, from first principles: every picture becomes a point in space, one division makes cosine and Euclidean distance rank identically, and simple arithmetic decides when exact search dies." />
   <meta property="og:url" content="https://anubhavagr.github.io/posts/image-search-geometry.html" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/posts/image-search-geometry/geometry.png" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -17,7 +17,7 @@
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "headline": "Cosine similarity vs Euclidean distance: what matters for image search",
-    "description": "How search-by-image works, explained from zero: embeddings, the cosine/L2 proof, what precision and recall actually diagnose, and the arithmetic that decides when exact search dies.",
+    "description": "How search-by-image works, from first principles: every picture becomes a point in space, one division makes cosine and Euclidean distance rank identically, and simple arithmetic decides when exact search dies.",
     "datePublished": "2026-08",
     "author": { "@type": "Person", "name": "Anubhav Agrawal", "url": "https://anubhavagr.github.io/" },
     "publisher": { "@type": "Person", "name": "Anubhav Agrawal" },
@@ -61,13 +61,13 @@
           </a>
           <span class="card__tag">Retrieval · Embeddings</span>
           <h1 style="margin-top:.8rem;">Cosine similarity vs Euclidean distance: what matters for image search.</h1>
-          <p class="sub">How "search by image" actually works — explained from zero, then stress-tested: I benchmarked five CNN backbones on the same FAISS pipeline, and every insight that mattered came from proofs and arithmetic, not from training.</p>
+          <p class="sub">How "search by image" actually works: every picture becomes a point in space, "similar" becomes a distance, and one short proof shows the two famous ways of measuring it always agreed.</p>
 
           <div class="article__meta">
-            <div><b>Backbones</b><span>5 CNNs, 3.5M – 27M params</span></div>
-            <div><b>Index</b><span>FAISS</span></div>
-            <div><b>Best result</b><span>InceptionV3: P 1.00 · R 0.875 @ 50 ms</span></div>
-            <div><b>Repo</b><span><a href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">anubhavagr/find-me-lens</a></span></div>
+            <div><b>You'll need</b><span>vectors &amp; dot products</span></div>
+            <div><b>You'll learn</b><span>how search-by-image really works</span></div>
+            <div><b>The twist</b><span>one division makes both distance measures agree</span></div>
+            <div><b>Reads in</b><span>≈ 8 minutes</span></div>
           </div>
         </div>
 
@@ -75,209 +75,255 @@
           <div class="callout">
             <div class="h">TL;DR</div>
             <ul style="margin:.35rem 0 0; padding-left:1.15rem;">
-              <li style="margin:.3rem 0;"><strong>Cosine and Euclidean distance give identical rankings</strong> once vectors are normalized — provable in two lines.</li>
-              <li style="margin:.3rem 0;"><strong>Precision 1.00 with recall 0.87 is a diagnosis</strong>, not a disappointment: the failure is ranking, not confusion — and the two have different fixes.</li>
-              <li style="margin:.3rem 0;"><strong>Exact search dies on arithmetic you can do on paper</strong>: 4×10⁸ distance computations per query at 100K images. An IVF index does 2.5% of that.</li>
+              <li style="margin:.3rem 0;"><strong>A picture becomes a point.</strong> A neural network — classically a CNN, the model family behind image recognition — compresses each photo into a list of about 2,000 numbers. Training arranges those lists so that photos of similar things sit close together; search becomes pure geometry: find the nearest points.</li>
+              <li style="margin:.3rem 0;"><strong>The two famous distance measures are secretly one.</strong> Rescaling every embedding to the same length collapses the argument between straight-line distance and angle: the two always produce the identical ranking. The proof is two lines of algebra, below.</li>
+              <li style="margin:.3rem 0;"><strong>Scale is arithmetic, not luck.</strong> Comparing a query against every stored point grows in a straight line with library size; an index that checks only the few nearest cells (the inverted-file, or IVF, index) does 0.25% of that work at a library of 10 million images — trading a tunable slice of completeness for the speed.</li>
             </ul>
           </div>
 
-          <h2>What this post is about</h2>
+          <h2>Search by image is a magic trick</h2>
           <p>
-            You've used Google Lens: photograph a shoe, get the same shoe back from a database of millions.
-            That's <strong>content-based image retrieval</strong> (CBIR) — "search by what the image
-            <em>contains</em>" rather than by text tags. The machinery is conceptually tiny:
+            Photograph a stranger's sneakers and, a second later, a search engine hands you that exact
+            pair from a catalog of millions. No text was typed. Nobody tagged the photo. The machine
+            simply <em>looked</em> — and understood.
           </p>
-          <ol>
-            <li>Turn each image into a <strong>vector</strong> (a list of ~1000 numbers) that summarizes its content.</li>
-            <li>Store all the vectors in an index.</li>
-            <li>To search: vectorize the query image, return the <strong>closest stored vectors</strong>.</li>
-          </ol>
           <p>
-            This post is about everything that isn't step 1. The vectorization is learned (that's the ML);
-            the rest is geometry and arithmetic — and the rest is where the real engineering decisions live.
-            I'll cover:
+            It's a genuinely good trick, and like all good tricks it collapses into a few small moves
+            once you've seen them. Here is the collapse: a computer never sees a picture — it sees a
+            grid of color numbers, one set per pixel. The first piece of real engineering is a way to
+            squeeze that grid into a short list of numbers describing the picture's <em>content</em>,
+            so that every photo of that sneaker becomes nearly the same list. A picture becomes a
+            <strong>point in space</strong> — "space" in the mathematical sense: a coordinate system
+            with a few thousand axes. From that moment, "find photos like this" stops being a vision
+            problem and becomes a geometry problem: <em>which points sit close to mine?</em>
+          </p>
+          <p>
+            This post walks the chain one link at a time — five dots, each raising exactly the question
+            the next dot answers — and ends with the two-line proof that ties the field's two famous
+            distance measures together. The one piece of genuine machine learning you need to take on
+            faith is that a neural network can arrange images so similar ones land close together.
+            Everything after that is arithmetic you can check with a pencil.
+          </p>
+
+          <h2>First dot: every picture is a point</h2>
+          <p>
+            To a computer, a photo is millions of numbers describing color at positions. That
+            representation is useless for search because it is loyal to the wrong things: shift the
+            camera one centimeter and every number changes, while the <em>meaning</em> — "a sneaker" —
+            stays exactly where it was. Search needs the opposite kind of summary: blind to the
+            meaningless differences, faithful to the meaningful one.
+          </p>
+          <p>
+            So the image is passed through a <strong>neural network</strong> trained on millions of
+            labeled photographs — classically a <strong>convolutional neural network (CNN)</strong>,
+            the model family that powered the image-recognition boom. Instead of taking the network's
+            final classification ("28% sneaker, 9% boot, …"), you take the numbers of its
+            second-to-last layer — its internal description of the image, written just before it
+            commits to a label. That list of about 2,000 numbers is called an
+            <strong>embedding</strong>: coordinates that place the image inside a space with about
+            2,000 axes. (Real systems use anywhere from a few hundred to 2,048 dimensions; we'll say
+            2,000 and mean it loosely.)
+          </p>
+          <p>
+            The property that makes the whole story work is this: <strong>images with similar content
+            get placed at nearby points.</strong> Two photos of the same sneaker, shot from different
+            angles in different light, land almost on top of each other; a sneaker and a sailboat land
+            far apart. Nobody writes that rule down — the network learns it, because "similar images
+            should get similar answers" is precisely what it is graded on during training.
+          </p>
+          <p>
+            From here on, the photo is gone; only the point remains. Searching a library of images is
+            now literally searching a library of points — which leaves exactly one decision:
+            <em>what does "close" mean?</em>
+          </p>
+
+          <h2>Second dot: two rulers for "close"</h2>
+          <p>
+            Mathematics offers two natural ways to measure distance between points, and you already
+            know both.
+          </p>
+          <p>
+            <strong>Euclidean distance</strong> is the straight line between two points — how far you
+            would have to walk from one to reach the other. <strong>Cosine similarity</strong> works
+            differently: draw an arrow — a <strong>vector</strong> — from the origin to each point,
+            and measure the <em>angle</em> between the two arrows. Do they point the same way
+            (cos θ = 1), at right angles (cos θ = 0), or in opposite directions (cos θ = −1)?
+          </p>
+          <p>
+            Two rulers for the same job — and, left alone, they disagree. That disagreement is easiest
+            to feel with real numbers. Describe each book with two numbers: its romance pages and its
+            rocket-science pages. That pair <em>is</em> the book's embedding, in a miniature
+            two-dimensional space. Book <strong>A</strong> = (5, 1): light on rockets. Book
+            <strong>B</strong> = (20, 5): also mostly romance — just a longer book. Book
+            <strong>C</strong> = (2, 5): mostly rockets.
           </p>
           <ul>
-            <li>what an <strong>embedding</strong> is and why "closer vector = similar image" is even coherent;</li>
-            <li>a two-line proof that the two similarity metrics everyone mentions — <strong>cosine similarity and Euclidean (L2) distance</strong> — are the same thing;</li>
-            <li>how to read <strong>precision and recall</strong> for a retrieval system, and what their combination diagnoses;</li>
-            <li>the <strong>cost arithmetic</strong> that forces big systems away from exact search.</li>
+            <li>Straight-line distance from A to B: √(15² + 4²) ≈ <strong>15.5</strong>. From A to C: √(3² + 4²) = <strong>5</strong>. By the straight line, C is more than three times closer to A than B is.</li>
+            <li>Angle from A: B sits in almost the same direction — cos θ ≈ <strong>0.999</strong>, practically the same book. C points noticeably elsewhere — cos θ ≈ <strong>0.55</strong>, a different subject.</li>
           </ul>
           <p>
-            Prerequisites: vectors and dot products. No neural network knowledge needed — the one thing you
-            have to take from deep learning (a CNN can produce a useful vector) is taken on faith and
-            treated as a black box.
+            So Euclidean says A's nearest book is <em>C</em>; cosine says it's <em>B</em>, with C a
+            distant stranger. Who is right? Both — the answer depends on whether the <strong>length of
+            the vector carries meaning</strong>. Here the vector's length is essentially the book's
+            thickness (its total page count); if you care about subject, thickness is noise and the
+            angle is the honest ruler. If raw amounts matter — someone wants the <em>big</em> romance
+            novel — the straight line has a case.
+          </p>
+          <p>
+            Image embeddings face exactly this fork. A beach photo and a badly overexposed photo of the
+            same beach are the same content at different magnitudes — as vectors, they point the same
+            way but sit at different distances from the origin. Search-by-content wants the exposure
+            ignored. So real systems reach for the angle — and then something curious happens. The
+            argument between the rulers is about to end, not by crowning a winner, but by removing the
+            thing they were fighting over.
           </p>
 
-          <h2>The project behind it</h2>
+          <h2>Third dot: one division ends the argument</h2>
           <p>
-            I built a small Lens-style search engine —
-            <a href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener">find-me-lens</a> —
-            to understand the moving parts end to end. You point it at a folder of images organized by class,
-            it embeds them all, and you can query with an image to get its nearest neighbors. The one
-            product decision I cared about: <strong>which network produces the vector?</strong> So I ran
-            five off-the-shelf CNNs — ResNet34, MobileNetV2, EfficientNet-B0, DenseNet121, InceptionV3 —
-            through the identical pipeline. Same images, same index, same evaluation. Everything below comes
-            from that experiment.
-          </p>
-
-          <h2>The vocabulary you'll need</h2>
-          <ul>
-            <li><strong>Embedding:</strong> a vector (here, a few hundred to ~2000 numbers) representing an image, produced by the second-to-last layer of a neural network trained on image classification. The key property, which the training instills: images of similar things end up as nearby vectors. The network itself is called the <strong>backbone</strong>.</li>
-            <li><strong>FAISS:</strong> Facebook AI Similarity Search — the standard open-source library for storing vector collections and answering "closest vectors to this one" quickly.</li>
-            <li><strong>L2 normalization:</strong> dividing a vector by its own length, so all vectors live on a sphere of radius 1 (direction only, no magnitude).</li>
-            <li><strong>Exact vs approximate search:</strong> exact = compare the query against every vector (perfect, expensive); approximate (e.g. the IVF index below) = compare against a clever subset (slightly imperfect, much cheaper).</li>
-          </ul>
-
-          <h2>The experiment, and its one table</h2>
-          <p>
-            Five backbones, one pipeline each: embed every image, index with FAISS, query with held-out
-            images, and score the returned neighbors. Scoring needs one definition: a returned image counts
-            as <em>relevant</em> if it belongs to the same class as the query. With that:
-            <strong>precision</strong> = fraction of returned results that are relevant;
-            <strong>recall</strong> = fraction of all relevant images in the database that you actually
-            returned. Here's what came out:
-          </p>
-          <table>
-            <thead><tr><th>Backbone</th><th>Precision</th><th>Recall</th><th>F1</th><th>Latency (s)</th></tr></thead>
-            <tbody>
-              <tr><td>ResNet34</td><td>1.0000</td><td>0.8500</td><td>0.9189</td><td>0.045</td></tr>
-              <tr><td>MobileNetV2</td><td>1.0000</td><td><strong>0.8700</strong></td><td>0.9302</td><td><strong>0.030</strong></td></tr>
-              <tr><td>EfficientNet-B0</td><td>1.0000</td><td>0.8600</td><td>0.9241</td><td>0.035</td></tr>
-              <tr><td>DenseNet121</td><td>1.0000</td><td>0.8550</td><td>0.9220</td><td>0.040</td></tr>
-              <tr><td>InceptionV3</td><td>1.0000</td><td><strong>0.8750</strong></td><td><strong>0.9333</strong></td><td>0.050</td></tr>
-            </tbody>
-          </table>
-          <p>
-            Two features of this table look boring and are actually the most informative numbers in the
-            experiment: the wall of 1.0000s in the precision column, and the latency column's tidy order.
-            The rest of the post is about those.
-          </p>
-
-          <h2>Result 1: cosine similarity and Euclidean distance give the same ranking</h2>
-          <p>
-            You'll see image-search codebases (including mine) normalize every vector to length 1 and then
-            search by <em>Euclidean distance</em> (L2) — while every tutorial talks about <em>cosine similarity</em>.
-            These produce identical rankings, and the proof is two lines of algebra.
+            Every serious image-search system does one thing before anything else: it divides each
+            embedding by its own length. The operation is called <strong>L2 normalization</strong> —
+            L2 because it uses the straight-line (Euclidean) length from two paragraphs ago — and it
+            moves every point onto the sphere of radius 1 around the origin. Each vector keeps its
+            direction and loses its size. One division per image, done once, at index time.
           </p>
           <p>
-            Cosine similarity is the angle between two vectors, written cos θ where θ is that angle (1 =
-            same direction, 0 = unrelated, −1 = opposite). Take two unit vectors <strong>a</strong>,
-            <strong>b</strong> and expand the squared distance:
+            After that, the fight is over, and the proof takes two lines. Writing ‖a‖ for the length
+            of vector <strong>a</strong>, and a·b for the <strong>dot product</strong> — multiply
+            matching coordinates, then add up the products — the squared Euclidean distance between
+            two vectors expands as:
           </p>
           <blockquote>
-            ‖a − b‖² = ‖a‖² − 2a·b + ‖b‖² = 2 − 2·cos θ
+            ‖a − b‖² = ‖a‖² − 2(a·b) + ‖b‖²
           </blockquote>
           <p>
-            Squared L2 distance is a strictly decreasing function of cosine similarity. Ranking by one is
-            ranking by the other — no exceptions, no approximations. A few concrete pairs to build
-            intuition for the mapping:
+            On the unit sphere ‖a‖ = ‖b‖ = 1. And for unit vectors — only for unit vectors — the dot
+            product equals the cosine of the angle between them: a·b = cos θ. What remains:
           </p>
-          <ul>
-            <li>cos θ = 0.90 → distance² = 0.200</li>
-            <li>cos θ = 0.95 → distance² = 0.100</li>
-            <li>cos θ = 0.99 → distance² = 0.020</li>
-          </ul>
+          <blockquote>
+            ‖a − b‖² = 2 − 2 cos θ
+          </blockquote>
+          <p>
+            Read it slowly: <strong>squared distance is a function of the angle alone.</strong> Two
+            pairs of images with the same cosine are exactly the same distance apart — no approximation.
+            Ranking by one ruler and ranking by the other produce the identical list, every time.
+          </p>
 
           <figure class="figure">
             <img src="../assets/img/posts/image-search-geometry/geometry.png?v=2" alt="Left: squared Euclidean distance plotted against cosine similarity for unit vectors — one curve, with the region where similar images live shaded. Right: a 2-D embedding space with two image classes as point clouds in opposite directions, a query star, and a hollow point showing that halving a vector's length does not change its ranking." />
-            <figcaption><strong>a · One number determines the other.</strong> The equation as a curve: distance is fully determined by cosine similarity, and retrieval-quality neighbors (cos θ ≥ 0.90, shaded) all sit in its flat region. <strong>b · Only the angle matters.</strong> A 2-D stand-in for the real 1000-dimensional space: two classes are two <em>directions</em>, the query is answered by angle alone, and the hollow point shows why — same direction, half the length, identical ranking.</figcaption>
+            <figcaption><strong>a · One number determines the other.</strong> Squared distance as a function of cosine alone — the three marked points read cos θ = 0.90 → 0.200, 0.95 → 0.100, 0.99 → 0.020; the shaded band is where retrieval-quality neighbors live. <strong>b · Only the angle matters.</strong> Two image classes as two directions from the origin; a query is answered by angle alone, and the hollow point shows why — same direction, half the length, identical ranking.</figcaption>
           </figure>
 
           <p>
-            Two consequences. Practically: <strong>normalize once at index time</strong> and never think
-            about metrics again. Conceptually: this picture is what a "good embedding" means — training
-            doesn't magic similarity into numbers, it <em>arranges directions on a sphere</em> so similar
-            images subtend small angles. Every retrieval metric you'll ever see is a measurement of that
-            arrangement.
+            Three anchor points make the curve intuitive: identical directions (θ = 0°) sit at distance
+            0; perpendicular directions (θ = 90°) at <strong>√2</strong>, the distance between any two
+            perpendicular unit vectors; opposite directions (180°) at <strong>2</strong>, the farthest
+            apart two unit points can ever be.
+          </p>
+          <p>
+            This is why tutorials and production code seem to talk past each other. Tutorials say
+            "cosine similarity"; libraries like FAISS — the open-source similarity-search standard —
+            happily search by straight-line distance, because after normalization the two are the same
+            geography, and computing dot products is the one thing CPUs and GPUs do fastest. The
+            equivalence isn't a party trick; it's why nobody ever has to choose.
+          </p>
+          <p>
+            Panel (b) holds the deeper point. Similarity was never in how <em>long</em> a vector was —
+            only in where it <em>pointed</em>. The network's real job was to arrange directions on a
+            sphere so similar content subtends small angles; magnitude was noise all along, and
+            normalization is the honesty of throwing it away. (Keep the books in mind for the rare
+            cases where length <em>was</em> the meaning — there, you simply skip the division.)
           </p>
 
-          <h2>Result 2: P = 1.00 with R &lt; 1 is a diagnosis</h2>
+          <h2>Fourth dot: why "check everything" dies</h2>
           <p>
-            Back to the table's wall of perfect precisions. Recall the definitions — precision punishes
-            <em>wrong</em> results returned; recall punishes <em>right</em> results missed. So
-            P = 1.0000 for every backbone means: <strong>nothing wrong was ever returned</strong>. The
-            neighborhoods are clean; no class ever leaked into another's results.
+            Now let the library grow. Say 100 million images, each embedded into 2,048 numbers — a
+            concrete stand-in for our "about 2,000" — each stored as a 4-byte floating-point value.
+          </p>
+          <ul>
+            <li><strong>Memory:</strong> 10⁸ × 2,048 × 4 B ≈ <strong>800 GB</strong> of vectors. Large, but one serious machine can hold it.</li>
+            <li><strong>Search:</strong> exact search compares the query against <em>every</em> stored point. Comparing two 2,048-dimensional vectors takes roughly 2 × 2,048 ≈ 4,000 multiply-and-add operations; across the whole library that is 4,000 × 10⁸ ≈ <strong>4 × 10¹¹ operations</strong> — several hundred billion — for a single search.</li>
+          </ul>
+          <p>
+            The memory is a footnote; the search is the story. That 4 × 10¹¹ grows in a
+            <strong>straight line</strong> with library size: double the catalog, double the work,
+            forever. Hardware gets faster, but a straight line outlives every server purchase. Exact
+            search is not slow because the code is bad — it is slow by definition.
+          </p>
+
+          <figure class="figure">
+            <img src="../assets/img/posts/image-search-geometry/cost.png?v=3" alt="Log-log plot of distance computations per query versus library size: exact search grows in a straight line with N; an IVF index probing 8 cells grows with the square root of N, doing 0.25% of the exact work at 10 million vectors — about 400 times less." />
+            <figcaption><strong>The cost of "compare everything."</strong> Exact search grows in a straight line with library size; an IVF index checks only the ~8√N points in the nearest cells. At 10 million images that is 0.25% of the work — a ≈400× saving — and the probe count is a dial trading recall back for speed.</figcaption>
+          </figure>
+
+          <p>
+            The standard escape is to stop checking everything. The <strong>inverted-file (IVF)
+            index</strong> borrows an idea older than computers: don't search the building, search the
+            right shelf. Offline, the points are clustered into about √N cells — for 10 million points,
+            √10,000,000 ≈ 3,160 cells — and each cell ends up holding about √N points. At query time,
+            the search compares the query only against the 8 cells nearest to it (the common default),
+            so it examines about 8 × √N points instead of N. At 10 million images: about 25,000 points
+            instead of 10,000,000 — <strong>0.25% of the work, a ≈400× speedup</strong>, the gap drawn
+            in the figure.
           </p>
           <p>
-            Then recall at 0.85–0.875 means: 12.5–15% of same-class images were <em>not</em> returned. Put
-            the two together and the failure mode is pinned precisely: the missing neighbors exist in the
-            index and are findable — they simply scored below the cut. <strong>All error is ranking error,
-            none is confusion error.</strong>
+            Nothing is free: a true nearest neighbor sitting in a cell you didn't probe gets missed.
+            But this is a <em>dial</em>, not a defect. Turn "cells probed" up and the index slides
+            toward exactness, buying recall back with time. This is why serious retrieval systems
+            report recall measured <em>against exact search</em> — so the price of the dial is always
+            on the record.
+          </p>
+
+          <h2>Fifth dot: two numbers that name the disease</h2>
+          <p>
+            Built and deployed — but is it any good? Two numbers answer that, and the <em>pair</em>
+            matters more than either alone. First, set the scene: each query returns a short list of
+            neighbors — the 10 nearest points, say — and for evaluation we know which library points
+            are <em>truly</em> similar to the query (say, photos of the same object class).
+          </p>
+          <p>
+            <strong>Precision</strong>: of the 10 returned points, how many were truly similar? It
+            punishes wrong answers. <strong>Recall</strong>: of all the truly-similar points in the
+            library, how many made it into the 10? It punishes misses.
           </p>
           <div class="callout">
             <div class="h">Reading the pair</div>
             <ul style="margin:.35rem 0 0; padding-left:1.15rem;">
-              <li style="margin:.3rem 0;"><strong>P high, R low</strong> — clean embeddings, conservative ranking. A systems problem: return more neighbors, lower the threshold, tighten within-class compactness. Mechanical fixes.</li>
-              <li style="margin:.3rem 0;"><strong>P low</strong> — embeddings genuinely mix classes. A model problem: no index knob helps; you need a better backbone.</li>
+              <li style="margin:.3rem 0;"><strong>Precision high, recall low</strong> — the system is too shy: it returns only what it is certain of and misses plenty. Every fix is mechanical: return more neighbors, lower the similarity threshold, probe more cells.</li>
+              <li style="margin:.3rem 0;"><strong>Precision low</strong> — the embeddings themselves confuse these things. No knob on the index touches that; the model needs better training.</li>
             </ul>
           </div>
-
           <p>
-            That's why the pair's <em>shape</em> beats any single number. Two systems with the same F1 —
-            P 0.90 / R 0.90 versus my P 1.00 / R 0.87 — carry opposite diagnoses: the first has confused
-            embeddings, the second merely ranks conservatively. Same score, completely different to-do list.
+            Two systems can post the same F1 — the standard harmonic blend of precision and recall —
+            while carrying opposite diagnoses: one needs an index tweak, the other a retrain. Read the
+            <em>shape</em> of the pair before trusting any single number. The same discipline governs
+            the IVF dial: every turn of the knob moves you along a precision/recall curve that you, not
+            a benchmark, have to judge.
           </p>
 
-          <h2>Result 3: the arithmetic that kills exact search</h2>
+          <h2>Connecting the dots</h2>
           <p>
-            My index is small, so it uses exact search: compare the query against <em>every</em> vector.
-            That's a luxury, and the math says exactly how long it lasts. For a database of N images, each
-            embedded into d dimensions:
+            Look back up the chain. A photograph became a point — that was the learned part.
+            "Similar" became a distance — geometry. One division revealed that the two famous
+            distance measures were always the same ranking — algebra, two lines. "Find the nearest"
+            became an organized search with a tunable dial — data structures. And "is it any good"
+            became two numbers that name the disease — evaluation.
           </p>
-          <ul>
-            <li><strong>Memory:</strong> N × d × 4 bytes. At a modest 100K images × 2048 dimensions: <strong>819 MB</strong> of vectors (409 MB at half precision).</li>
-            <li><strong>Compute per query:</strong> each distance is d multiply-adds; against every vector that's 2Nd ≈ <strong>4.1 × 10⁸</strong> operations. Per query. At 10M images it's 100× that.</li>
-          </ul>
           <p>
-            Both scale linearly in N. No amount of GPU fixes linear. The standard escape is the <strong>IVF
-            index</strong>: cluster the vectors into nlist cells once, offline; at query time, compare only
-            against the nprobe cells nearest to the query. With the common heuristic nlist = √N and
-            nprobe = 8, you touch 8√N vectors instead of N — <strong>2.5% of the work at 100K images,
-            0.25% at 10M</strong>. The price is recall: a true neighbor sitting in an unprobed cell is
-            missed. That price is tunable (raise nprobe toward exactness) and, importantly, measurable —
-            which is why serious retrieval systems report "recall@k against exact search."
+            Five dots, each small enough to explain at dinner. The neural network gets the headlines,
+            but it is only the first dot; the system lives or dies on the geometry around it — and the
+            geometry is yours to reason about with a pencil. A ruler for the straight line, a
+            protractor for the angle, and the knowledge that after one honest division, they never
+            disagree.
           </p>
-
-          <figure class="figure">
-            <img src="../assets/img/posts/image-search-geometry/cost.png?v=2" alt="Left: measured query latency versus parameter count for five CNN backbones, ordered perfectly along a trade-off line from MobileNetV2 to InceptionV3. Right: distance computations per query versus index size on log-log axes — exact search grows linearly with N, IVF with the square root of N, a 400x gap at 10 million vectors." />
-            <figcaption><strong>a · Latency tracks the backbone (ρ = 1.00).</strong> Five backbones, one trade-off line: the recall you buy at InceptionV3 costs +67% latency over MobileNetV2 (the two highlighted endpoints). <strong>b · Exact search grows with N; IVF with √N.</strong> The shaded gap is ≈400× less work at 10M images, tunable back toward exactness via nprobe.</figcaption>
-          </figure>
-
           <p>
-            The left panel is the sleeper insight of the whole experiment: <strong>latency is decided by
-            the backbone, not the search</strong> — the CNN forward pass dominates, and FAISS is a
-            rounding error. The dashed line between the two highlighted endpoints is the whole decision:
-            InceptionV3 buys +0.5 percentage points of recall over MobileNetV2 for 67% more latency.
-            Take that trade or don't — but it's a line item now, not a benchmark trophy.
-          </p>
-
-          <h2>Same math, bigger scale</h2>
-          <p>
-            Everything above transfers unchanged to the LLM side of my day job. The RAG system I run at
-            <a href="../projects/adaptive-rag.html" style="color:var(--accent); border-bottom:1px solid color-mix(in srgb, var(--accent) 35%, transparent);">Griphic</a>
-            retrieves over 10K+ documents using 512-d embeddings of text instead of images: same
-            normalization, same equivalence theorem, same recall-vs-cost dial on the index. Retrieval
-            quality is a system property — metric definitions, index arithmetic, and the eval harness are
-            the parts you own; the model is one ingredient.
-          </p>
-
-          <h2>Reproduce</h2>
-          <pre><code>git clone https://github.com/anubhavagr/find-me-lens
-cd find-me-lens
-pip install -r src/requirements.txt     # torch, torchvision, faiss
-
-python src/prepare_database_all.py      # embed + index the image folder, all 5 backbones
-python src/lens_all.py                  # query against the five FAISS indexes
-python src/analysis.py                  # compare the backbones side by side</code></pre>
-          <p>
-            The comparison table above comes out of the analysis step. The convention throughout: a
-            folder of images organized by class — that's all the pipeline assumes.
+            One last connection, free of charge: nothing above is special to images. Replace the
+            picture with a sentence, an audio clip, or a product description — modern systems embed
+            them all into the same kind of space, normalize, and measure with the same rulers. Learn
+            the geometry once, and every "search" you ever meet is the same search.
           </p>
 
           <p style="margin-top:2.5rem; display:flex; flex-wrap:wrap; gap:.5rem;">
             <a class="btn btn--primary btn--sm" href="dice-imbalance.html">Next: 99.6% accuracy, completely useless →</a>
-            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener">Repo on GitHub</a>
             <a class="btn btn--ghost btn--sm" href="../index.html#contact">Get in touch</a>
           </p>
         </div>
@@ -292,7 +338,7 @@ python src/analysis.py                  # compare the backbones side by side</co
         <a href="https://github.com/anubhavagr" target="_blank" rel="noopener" aria-label="GitHub">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5A11.5 11.5 0 0 0 .5 12 11.5 11.5 0 0 0 8.36 23c.6.11.82-.26.82-.58v-2.2c-3.34.73-4.04-1.4-4.04-1.4-.55-1.39-1.34-1.76-1.34-1.76-1.1-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.3 3.5.99.1-.78.42-1.3.76-1.6-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.62-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58A11.5 11.5 0 0 0 23.5 12 11.5 11.5 0 0 0 12 .5Z"/></svg>
         </a>
-        <a href="https://www.linkedin.com/in/anubhav-agrawal-547a3419b" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <a href="https://www.linkedin.com/in/anubhav-agr/" target="_blank" rel="noopener" aria-label="LinkedIn">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5A2.5 2.5 0 1 1 0 3.5a2.5 2.5 0 0 1 4.98 0zM.5 8h4V24h-4V8zM8 8h3.8v2.2h.05c.53-1 1.83-2.2 3.77-2.2 4 0 4.8 2.65 4.8 6.1V24h-4v-7.1c0-1.7 0-3.9-2.4-3.9s-2.7 1.85-2.7 3.75V24H8V8z"/></svg>
         </a>
       </div>
