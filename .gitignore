@@ -2,3 +2,6 @@ tools/fonts/
 .agents/
 .mimosa/
 medium/
+.DS_Store
+.zcodeignore
+*.DS_Store

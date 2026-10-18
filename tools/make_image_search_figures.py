@@ -153,45 +153,10 @@ style_ax(ax, grid=False)
 save(fig, "geometry.png")
 
 # ================================================================
-# FIGURE 2 — cost.png
+# FIGURE 2 — cost.png  (single panel: exact vs IVF, self-contained)
 # ================================================================
-params = {"MobileNetV2": 3.5, "EfficientNet-B0": 5.3, "DenseNet121": 8.0,
-          "ResNet34": 21.8, "InceptionV3": 27.2}        # torchvision, M params
-lat_ms = {"MobileNetV2": 30, "EfficientNet-B0": 35, "DenseNet121": 40,
-          "ResNet34": 45, "InceptionV3": 50}             # measured, find-me-lens
-
-fig = plt.figure(figsize=(10.6, 4.15), constrained_layout=True)
-
-# --- Panel a: latency vs backbone size ---------------------------
-ax = fig.add_subplot(1, 2, 1)
-# trade-off spine between the two endpoints
-ax.plot([params["MobileNetV2"], params["InceptionV3"]],
-        [lat_ms["MobileNetV2"], lat_ms["InceptionV3"]],
-        color=MUTE, lw=1.2, ls=(0, (4, 3)), zorder=2)
-
-offsets = {"MobileNetV2": (9, -4), "EfficientNet-B0": (9, -4),
-           "DenseNet121": (9, -4), "ResNet34": (9, -4),
-           "InceptionV3": (-7, 9)}
-ha = {n: "left" for n in params}; ha["InceptionV3"] = "right"
-for n in params:
-    star = n in ("MobileNetV2", "InceptionV3")
-    ax.scatter([params[n]], [lat_ms[n]], s=105 if star else 58,
-               color=TEAL if n == "MobileNetV2" else CLAY if n == "InceptionV3" else SOFT,
-               zorder=5)
-    ax.annotate(n, (params[n], lat_ms[n]), xytext=offsets[n],
-                textcoords="offset points", fontsize=9.3,
-                color=TEXT if star else SOFT, ha=ha[n], **MONO)
-
-ax.text(24.5, 31.5, "+0.5 pp recall for +67% latency", color=SOFT,
-        fontsize=9.5, ha="center", **MONO)
-
-ax.set_xlabel("backbone parameters (M, torchvision)")
-ax.set_ylabel("query latency (ms, measured)")
-ax.set_xlim(0, 32); ax.set_ylim(26, 54)
-style_ax(ax)
-
-# --- Panel b: exact vs IVF cost ----------------------------------
-ax = fig.add_subplot(1, 2, 2)
+fig = plt.figure(figsize=(7.2, 4.4), constrained_layout=True)
+ax = fig.add_subplot(1, 1, 1)
 N = np.logspace(3, 7, 240)
 d, nprobe = 2048, 8
 exact = 2 * d * N

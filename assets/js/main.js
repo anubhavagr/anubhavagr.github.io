@@ -37,6 +37,9 @@
   }
 
   /* --------------------------- Scrollspy ----------------------------- */
+  // Marks the rail + nav link of the section currently in view. With the
+  // two-column broadsheet layout the spy favors whichever column top is
+  // closest to the viewport middle.
   const sections = $$("section[id]");
   if ("IntersectionObserver" in window && sections.length) {
     const spy = new IntersectionObserver(
@@ -150,12 +153,14 @@
   observeReveals(); // enroll the freshly injected cards
 
   /* --------------------- Posts list folding -------------------------- */
-  // Long index walls overwhelm a first-time visitor: start with the recent
-  // four and expand on demand. No-JS readers and crawlers see all rows —
-  // collapsing only happens here, in script.
+  // On the single-column (mobile) layout the nine rows are a wall: start
+  // with the recent four and expand on demand. The desktop broadsheet
+  // columns already compress the list, so no folding there. No-JS readers
+  // and crawlers always see all rows.
+  const mobileList = window.matchMedia("(max-width: 980px)").matches;
   const postsGrid = $("#posts-grid");
   const postsToggle = $("#posts-toggle");
-  if (postsGrid && postsToggle && postsGrid.children.length > 4) {
+  if (postsGrid && postsToggle && postsGrid.children.length > 4 && mobileList) {
     const total = postsGrid.children.length;
     postsGrid.classList.add("is-collapsed");
     postsToggle.classList.remove("is-hidden");

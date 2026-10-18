@@ -4,16 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light" />
-  <meta name="theme-color" content="#f1ece0" />
+  <meta name="theme-color" content="#fdfdfd" />
 
   <title>Anubhav Agrawal — AI Engineer</title>
-  <meta name="description" content="AI engineer with 3+ years owning AI products end-to-end — a $200K+ ARR computer-vision product line, and the retrieval behind a production LLM system." />
+  <meta name="description" content="AI engineer with 3+ years owning AI products end-to-end — a $200K+ ARR computer-vision product line, the retrieval behind a production LLM system, and fixes landed upstream in ONNX Runtime and PyTorch." />
   <meta name="author" content="Anubhav Agrawal" />
   <link rel="canonical" href="https://anubhavagr.github.io/" />
 
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Anubhav Agrawal — AI Engineer" />
-  <meta property="og:description" content="Owns AI products end-to-end — production computer vision for medical imaging, and LLM/RAG systems. Case studies, benchmarks, and open-source lab work." />
+  <meta property="og:description" content="Owns AI products end-to-end — production computer vision for medical imaging, LLM/RAG systems, and fixes landed upstream in ONNX Runtime and PyTorch. Case studies, benchmarks, and open-source lab work." />
   <meta property="og:url" content="https://anubhavagr.github.io/" />
   <meta property="og:image" content="https://anubhavagr.github.io/assets/img/og.png" />
   <meta property="og:image:width" content="1200" />
@@ -26,9 +26,9 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-  <link rel="stylesheet" href="assets/css/styles.css?v=10" />
+  <link rel="stylesheet" href="assets/css/styles.css?v=21" />
 
   <script type="application/ld+json">
   {
@@ -40,7 +40,7 @@
     "email": "mailto:anubhavagr.mail@gmail.com",
     "address": { "@type": "PostalAddress", "addressCountry": "IN" },
     "sameAs": ["https://github.com/anubhavagr", "https://www.linkedin.com/in/anubhav-agr/"],
-    "knowsAbout": ["Machine Learning", "Deep Learning", "Computer Vision", "Large Language Models", "Retrieval-Augmented Generation", "Model Optimization", "TensorRT"]
+    "knowsAbout": ["Machine Learning", "Deep Learning", "Computer Vision", "Large Language Models", "Retrieval-Augmented Generation", "Model Optimization", "Model Quantization", "TensorRT", "ONNX Runtime", "Rust"]
   }
   </script>
 </head>
@@ -74,425 +74,216 @@
 
   <!-- ============================================================== MAIN -->
   <main class="wrap" id="top">
-    <div class="layout">
 
-    <!-- ------------------------------------------------------------ Rail (sticky orientation) -->
-    <aside class="rail">
-    <header class="identity">
-      <div class="identity__status">
-        <span class="dot"></span>
-        <span>Building production AI systems</span>
-      </div>
+  <!-- ============================================================== HERO -->
+  <header class="hero">
+    <div class="hero__id">
+      <p class="hero__status"><span class="dot"></span>Building production AI systems</p>
       <h1>Anubhav Agrawal</h1>
-      <p class="identity__role">
-        Engineer. Computer vision in production for a while, RAG systems now.
-        When something interests me I build it and benchmark it, and the
-        writeups end up here. Current thing is on-device search, everything
-        running locally, no cloud.
+      <p class="hero__bio">
+        I care about the whole machine, not just the model: training, inference,
+        serving, deployment. Building something from nothing 0 -&gt; 1, then
+        scaling it from 1 -&gt; 100, is the part of engineering I enjoy most.
+        And I can't leave a working system alone — there's always a faster
+        version of it.
       </p>
-      <p class="identity__index-label">On this site</p>
-      <nav class="identity__index" aria-label="What's on this site">
-        <a href="#blog"><b>01</b><span>My Writings</span><em>→</em></a>
-        <a href="#lab"><b>02</b><span>Projects</span><em>→</em></a>
-        <a href="#work"><b>03</b><span>Case studies</span><em>→</em></a>
-        <a href="#experience"><b>04</b><span>About me</span><em>→</em></a>
-      </nav>
-      <div class="identity__cta">
+      <div class="hero__cta">
         <a class="btn btn--primary btn--sm" href="mailto:anubhavagr.mail@gmail.com">Email me →</a>
         <a class="btn btn--ghost btn--sm js-resume-link" href="assets/anubhav-agrawal-resume.pdf" download>Résumé (PDF)</a>
+        <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn--ghost btn--sm" href="https://www.linkedin.com/in/anubhav-agr/" target="_blank" rel="noopener">LinkedIn</a>
       </div>
-      <p class="identity__stats">5+ yrs trying to keep up with AI · Built and shipped systems end-to-end</p>
-    </header>
-    </aside>
+    </div>
+    <div class="xp__edu reveal">
+      <div><b>M.Tech, AI &amp; ML</b><span>BITS Pilani · 2025—2027</span></div>
+      <div><b>B.Tech, CSE</b><span>BIT Durg · 2019—2023</span></div>
+    </div>
+    <div class="hero__stats">
+      <div class="stat reveal"><b>$200K+</b><span>ARR product owned <span class="nb">end-to-end</span></span></div>
+      <div class="stat reveal"><b>60%</b><span>per-request cost cut on a live LLM service</span></div>
+      <div class="stat reveal"><b>2</b><span>fixes merged upstream — ONNX Runtime, PyTorch</span></div>
+      <div class="stat reveal"><b>500+</b><span>concurrent users served in production</span></div>
+    </div>
+  </header>
 
-    <!-- ------------------------------------------------------------ Content stream -->
-    <div class="content">
+  <!-- ============================================================== BOARD -->
+  <div class="board">
 
-    <!-- ------------------------------------------------------------ WRITING -->
-    <section class="section" id="blog">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">01</span><span class="label">Blogs</span></h2>
-        <p class="section__sub">Engineering write-ups where the math is shown and every number is
-        measured — LLM inference on a MacBook Pro, INT8 quantization, retrieval geometry, medical
-        segmentation, and the ipic build log.</p>
+    <!-- ------------------------------------------------ WORK (row 1, left) -->
+    <section class="panel" id="work">
+      <div class="panel__head">
+        <h2><span class="kicker">01</span>Work</h2>
+        <p class="panel__sub">Two production AI systems owned end-to-end. The numbers on each card are the numbers they run at.</p>
       </div>
-      <div id="posts-grid">
-        <a class="post-row reveal" href="posts/ipic-v2-scale.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Performance</span>
-          </div>
-          <div class="post-row__body">
-            <h3>Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane<span class="post-row__arrow">→</span></h3>
-            <p>Part 3: the v2 rewrite — per-root shards with bounded-channel backpressure, a CLIP vision lane that nearly starved, a compute budget, measured results at 350k-file scale, and what shipped after: store compaction, whole-home default scope, v0.1.1 as a macOS DMG.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/inference-lab.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Part 1</span>
-          </div>
-          <div class="post-row__body">
-            <h3>Serving an LLM on a MacBook Pro: mlx-lm vs llama.cpp, from 1 user to 32<span class="post-row__arrow">→</span></h3>
-            <p>mlx-lm vs llama.cpp under 1 fairness contract: 45–56 tok/s single-stream, and a throughput curve flat from 1 user to 32. Crash forensics find the lock.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/inference-lab-2.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Part 2</span>
-          </div>
-          <div class="post-row__body">
-            <h3>Multi-instance LLM serving: why 3× the memory bought only 9% more throughput<span class="post-row__arrow">→</span></h3>
-            <p>K process-isolated instances behind 1 queue: +9% for 3× the RAM. The arithmetic says why — 1 instance already saturates the M4 Pro's memory bus.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/int8-quantization.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Inference</span>
-          </div>
-          <div class="post-row__body">
-            <h3>How INT8 quantization works: calibration, error bounds, and why accuracy barely drops<span class="post-row__arrow">→</span></h3>
-            <p>What INT8 quantization is and why it barely hurts — the affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/image-search-geometry.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Retrieval</span>
-          </div>
-          <div class="post-row__body">
-            <h3>Cosine similarity vs Euclidean distance: what matters for image search<span class="post-row__arrow">→</span></h3>
-            <p>How search-by-image works, from zero: the cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and the arithmetic that decides when exact search dies.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/dice-imbalance.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Medical CV</span>
-          </div>
-          <div class="post-row__body">
-            <h3>Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works<span class="post-row__arrow">→</span></h3>
-            <p>In medical segmentation the target — a coronary vessel — is 0.39% of the pixels, and the standard loss trains a model that's great at everything else. Derived, then fixed with Dice.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/gram-matrix.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Deep Learning</span>
-          </div>
-          <div class="post-row__body">
-            <h3>How neural style transfer works: VGG features, Gram matrices, and receptive fields<span class="post-row__arrow">→</span></h3>
-            <p>Style transfer explained from zero — and its key object provably discards all position information (measured: 1.7e-18). Plus the receptive-field arithmetic behind the layer choices.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/ipic-architecture.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Rust</span>
-          </div>
-          <div class="post-row__body">
-            <h3>On-device semantic file search in Rust: the ipic engine architecture<span class="post-row__arrow">→</span></h3>
-            <p>Part 1 of the ipic build log: the first engine — 3 retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, crash-safety by job state. One focused week, 23 commits.</p>
-          </div>
-        </a>
-        <a class="post-row reveal" href="posts/ipic-hybrid-search.html">
-          <div class="post-row__left">
-            <span class="post-row__part">Hybrid Search</span>
-          </div>
-          <div class="post-row__body">
-            <h3>Hybrid search with reciprocal rank fusion: semantic, keyword, filename, and vision lanes<span class="post-row__arrow">→</span></h3>
-            <p>Part 2: the ranking math — weighted reciprocal rank fusion across semantic, vision, keyword and filename lanes, derived from requirements and computed on a worked example. No re-ranker, 4–10 ms.</p>
-          </div>
-        </a>
-            </div>
-      <button id="posts-toggle" class="btn btn--ghost btn--sm posts-toggle is-hidden" aria-expanded="false">Show all posts ↓</button>
-    </section>
-
-    <!-- ------------------------------------------------------------ OPEN SOURCE -->
-    <section class="section" id="lab">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">02</span><span class="label">Open source</span></h2>
-        <p class="section__sub">Side projects with real inputs and real outputs — ipic, a file
-        manager that searches your entire home directory by meaning, fully offline; plus
-        colorization, style transfer, and stitching rebuilt from the papers.</p>
-      </div>
-      <div id="lab-grid" class="grid-2">
-
-        <a class="lab-card reveal" href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">
-          <div class="lab-card__media">
-            <img src="assets/img/posts/ipic-architecture/app-search.png" alt="Real screenshot of the ipic app: a natural-language search returning 100 ranked hits across file types, with a status bar showing text and CLIP-vision embedders and image-content search active" loading="lazy" />
-          </div>
-          <div class="lab-card__body">
-            <span class="lab-card__repo">ipic</span>
-            <h3>ipic — a file manager that understands your files</h3>
-            <p>Fully on-device RAG over your entire home directory: type or speak a query, get ranked results across text, PDFs, audio, video and images. Rust, local whisper transcription, i8-quantized vectors — no cloud, ever. Shipped as a macOS DMG.</p>
-            <div class="chips"><span class="chip">Rust</span><span class="chip">Hybrid RAG</span><span class="chip">Whisper</span><span class="chip">SQLite FTS5</span><span class="chip">ONNX</span><span class="chip">macOS DMG · v0.1.1</span></div>
-            <span class="lab-card__arrow">open repo →</span>
-          </div>
-        </a>
-        <a class="lab-card reveal" href="https://github.com/anubhavagr/no_more_BWs" target="_blank" rel="noopener">
-          <div class="lab-card__media">
-            <img src="assets/img/projects/colorization.png" alt="Four-panel colorization grid comparing ECCV and SIGGRAPH model outputs" loading="lazy" />
-          </div>
-          <div class="lab-card__body">
-            <span class="lab-card__repo">no_more_BWs</span>
-            <h3>Colorizing black-and-white photography</h3>
-            <p>ECCV'16 and SIGGRAPH'17 colorization run side by side over Ansel Adams landscapes and personal photos. Four-panel grid: original, B&amp;W input, both outputs.</p>
-            <div class="chips"><span class="chip">PyTorch</span><span class="chip">Colorization</span><span class="chip">ECCV'16</span><span class="chip">SIGGRAPH'17</span></div>
-            <span class="lab-card__arrow">open repo →</span>
-          </div>
-        </a>
-        <a class="lab-card reveal" href="https://github.com/anubhavagr/neural-style-transfer" target="_blank" rel="noopener">
-          <div class="lab-card__media">
-            <img src="assets/img/projects/style-transfer-1.png" alt="Neural style transfer output showing a content image restyled" loading="lazy" />
-          </div>
-          <div class="lab-card__body">
-            <span class="lab-card__repo">neural-style-transfer</span>
-            <h3>Painting photos with the style of other art</h3>
-            <p>Gatys et al. (2015) reimplemented from scratch — content + style aligned through VGG feature maps and Gram-matrix losses.</p>
-            <div class="chips"><span class="chip">PyTorch</span><span class="chip">Gatys 2015</span><span class="chip">VGG</span><span class="chip">Gram loss</span></div>
-            <span class="lab-card__arrow">open repo →</span>
-          </div>
-        </a>
-        <a class="lab-card reveal" href="https://github.com/anubhavagr/Panorama-image-stitching" target="_blank" rel="noopener">
-          <div class="lab-card__media">
-            <img src="assets/img/projects/panorama.png" alt="Wide panorama stitched from three overlapping photographs" loading="lazy" />
-          </div>
-          <div class="lab-card__body">
-            <span class="lab-card__repo">Panorama-image-stitching</span>
-            <h3>Stitching N photos into 1 wide view</h3>
-            <p>Feature matching → homography → warping → blending, end to end on OpenCV. 3 overlapping frames fused into a 3815-px panorama.</p>
-            <div class="chips"><span class="chip">OpenCV</span><span class="chip">Feature Matching</span><span class="chip">Homography</span></div>
-            <span class="lab-card__arrow">open repo →</span>
-          </div>
-        </a>
-            </div>
-
-      <h3 class="lab-more">More repos on GitHub</h3>
-      <div id="proj-grid" class="grid-2">
-
-        <a class="proj-card reveal" href="https://github.com/anubhavagr/ArterySeg" target="_blank" rel="noopener">
-          <div class="proj-card__top">
-            <h3>ArterySeg</h3>
-            <span class="proj-card__note">U-Net++ · ResNet50 · TensorRT →</span>
-          </div>
-          <p>Coronary artery segmentation — U-Net++/ResNet50 encoder, Sobel edge-enhancement layer, spatial attention, TensorRT export.</p>
-          <div class="chips"><span class="chip">PyTorch</span><span class="chip">Segmentation</span><span class="chip">TensorRT</span><span class="chip">Medical</span></div>
-        </a>
-        <a class="proj-card reveal" href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener">
-          <div class="proj-card__top">
-            <h3>find-me-lens</h3>
-            <span class="proj-card__note">P 1.00 · R 0.87 · 30 ms →</span>
-          </div>
-          <p>Content-based image retrieval over FAISS, benchmarking five CNN backbones. 1.00 precision / 0.87 recall at ~30 ms.</p>
-          <div class="chips"><span class="chip">FAISS</span><span class="chip">CNN</span><span class="chip">Embeddings</span><span class="chip">Python</span></div>
-        </a>
-        <a class="proj-card reveal" href="https://github.com/anubhavagr/VideoStabilization" target="_blank" rel="noopener">
-          <div class="proj-card__top">
-            <h3>VideoStabilization</h3>
-            <span class="proj-card__note">Affine · trajectory smoothing →</span>
-          </div>
-          <p>Affine trajectory extraction → constrained-optimization smoothing → path-following crop.</p>
-          <div class="chips"><span class="chip">OpenCV</span><span class="chip">Optimization</span><span class="chip">Video</span></div>
-        </a>
-        <a class="proj-card reveal" href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener">
-          <div class="proj-card__top">
-            <h3>pytorch-cpp-tensorrt</h3>
-            <span class="proj-card__note">5-stage pipeline →</span>
-          </div>
-          <p>PyTorch → ONNX → TensorRT → C++ walkthrough, 1 notebook per stage. The pattern I use in production.</p>
-          <div class="chips"><span class="chip">TensorRT</span><span class="chip">ONNX</span><span class="chip">C++</span><span class="chip">Deployment</span></div>
-        </a>
-        <a class="proj-card reveal" href="https://github.com/anubhavagr/Condio" target="_blank" rel="noopener">
-          <div class="proj-card__top">
-            <h3>Condio</h3>
-            <span class="proj-card__note">multiprocessing →</span>
-          </div>
-          <p>Multiprocessing audio format converter across CPU cores.</p>
-          <div class="chips"><span class="chip">Python</span><span class="chip">Audio</span></div>
-        </a>
-        <a class="proj-card reveal" href="https://github.com/anubhavagr/LLMfromscratch" target="_blank" rel="noopener">
-          <div class="proj-card__top">
-            <h3>LLMfromscratch</h3>
-            <span class="proj-card__note">36 projects →</span>
-          </div>
-          <p>Active fork of a 36-project build-every-layer LLM manual.</p>
-          <div class="chips"><span class="chip">LLM</span><span class="chip">Transformers</span></div>
-        </a>
-            </div>
-
-      <p style="margin-top:1.2rem;">
-        <a class="text-link" href="https://github.com/anubhavagr?tab=repositories" target="_blank" rel="noopener">All repositories →</a>
-      </p>
-    </section>
-
-    <!-- ------------------------------------------------------------ WORK -->
-    <section class="section" id="work">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">03</span><span class="label">Work</span></h2>
-        <p class="section__sub">Two production AI systems owned end-to-end — an adaptive-RAG
-        interviewer serving 500+ concurrent users, and real-time X-ray restoration on live
-        cath-lab feeds. The numbers on each card are the numbers they run at.</p>
-      </div>
-      <div id="work-grid">
-
-        <a class="case-card case-card--featured reveal" href="projects/adaptive-rag.html">
-          <span class="case-card__tag">LLMs · Retrieval · Production</span>
+      <div class="cases">
+        <a class="case reveal" href="projects/adaptive-rag.html">
+          <span class="case__tag">LLMs · Retrieval · Production</span>
           <h3>Adaptive RAG — a stateful interviewer that listens</h3>
-          <p>Built the retrieval and reasoning core behind an AI interviewer that adapts in real time — three parallel retrieval paths, hybrid search, cross-encoder re-ranking, and an eval harness as the source of truth. Live for 500+ concurrent users at 99.9% uptime.</p>
-          <div class="case-card__kpis">
+          <p>Retrieval and reasoning core behind an AI interviewer that adapts in real time: three parallel retrieval paths, hybrid search, cross-encoder re-ranking, an eval harness as the source of truth.</p>
+          <div class="case__kpis">
             <div><b>0.95</b><span>Recall@5</span></div>
             <div><b>0.8s</b><span>p50 latency</span></div>
             <div><b>−68%</b><span>faster</span></div>
             <div><b>500+</b><span>users</span></div>
           </div>
-          <span class="case-card__arrow">read case study →</span>
+          <span class="case__arrow">read case study →</span>
         </a>
-
-        <a class="case-card case-card--featured reveal" href="projects/xray-superres.html">
-          <span class="case-card__tag">Computer Vision · Medical AI</span>
+        <a class="case reveal" href="projects/xray-superres.html">
+          <span class="case__tag">Computer Vision · Medical AI</span>
           <h3>Real-time blind X-ray image super-resolution</h3>
-          <p>Super-resolution and denoising on live cath-lab feeds — owned end-to-end from model R&amp;D through INT8/FP16 quantization to TensorRT/C++ serving, plus the automatic QCA pipeline cardiologists use mid-procedure. Three patents applied for.</p>
-          <div class="case-card__kpis">
+          <p>Super-resolution and denoising on live cath-lab feeds, owned from model R&amp;D through INT8/FP16 quantization to TensorRT/C++ serving, plus the QCA pipeline cardiologists use mid-procedure.</p>
+          <div class="case__kpis">
             <div><b>$200K+</b><span>ARR</span></div>
             <div><b>600+</b><span>FPS · RTX 4090</span></div>
             <div><b>−70%</b><span>latency</span></div>
             <div><b>0.94</b><span>Dice · QCA</span></div>
           </div>
-          <span class="case-card__arrow">read case study →</span>
+          <span class="case__arrow">read case study →</span>
         </a>
       </div>
     </section>
 
-    <!-- ------------------------------------------------------------ EXPERIENCE -->
-    <section class="section" id="experience">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">04</span><span class="label">Experience</span></h2>
+    <!-- ------------------------------------------ EXPERIENCE (row 1, right) -->
+    <section class="panel" id="experience">
+      <div class="panel__head">
+        <h2><span class="kicker">04</span>About me</h2>
       </div>
-
-      <div class="timeline">
-        <div class="tl-item">
-          <div class="tl-head">
-            <h3>Griphic <span class="org">— Delhi, India</span></h3>
-            <span class="when">Jan 2026 — Present</span>
+      <div class="xp">
+        <article class="xp__item reveal">
+          <div class="xp__meta">
+            <h3>Griphic</h3>
+            <span class="xp__role">AI Engineer II</span>
+            <span class="xp__when">Jan 2026 — Present</span>
           </div>
-          <div class="tl-role">AI Engineer II</div>
-          <p class="tl-lede">
-            An AI interviewer that listens — scoring answers, scaling difficulty live, asking real
-            follow-ups. I built the brain behind it.
-          </p>
           <ul>
-            <li>Stateful <b>LangGraph</b> agent; RAG over <b>three parallel retrieval paths</b>, hybrid search, cross-encoder re-ranking — <b>0.95 Recall@5</b> over <b>10K+ docs</b>.</li>
-            <li>Query latency <b>2.5s → 0.8s (−68%)</b>; domain-query <b>F1 +42%</b>.</li>
-            <li><b>Eval harness</b> (recall, faithfulness, answer-relevance) with cited, traceable output.</li>
+            <li>Cut per-request generation cost by <b>60%</b>: token-level cost tracing, prompt caching, bounded parallel fan-out.</li>
+            <li><b>99.5%</b> of output ships with zero human review — schema-validated, bounded self-correction.</li>
+            <li>Two-stage guardrail (batched judge, then adjudicator) stops prompt injection and credential leaks for at most <b>2 extra LLM calls</b> per clean request.</li>
+            <li>Merges clear unit + BDD suites, SonarQube (<b>≥90%</b>), Trivy HIGH/CRITICAL.</li>
           </ul>
-          <p class="tl-tail">Today: <b>500+ concurrent users</b> · <b>99.9% uptime</b>.</p>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-head">
-            <h3>Innvolution Healthcare <span class="org">— Bangalore, India</span></h3>
-            <span class="when">Sep 2023 — Dec 2025</span>
+        </article>
+        <article class="xp__item reveal">
+          <div class="xp__meta">
+            <h3>Innvolution Healthcare</h3>
+            <span class="xp__role">ML Engineer &amp; Team Lead</span>
+            <span class="xp__when">Sep 2023 — Dec 2025</span>
           </div>
-          <div class="tl-role">Machine Learning Engineer &amp; Team Lead</div>
-          <p class="tl-lede">
-            Joined as an intern on X-ray image quality; left two years later as ML team lead. Shipped
-            <b>AIMAG</b> — super-resolution and denoising on live cath-lab feeds.
-          </p>
           <ul>
-            <li>AIMAG end-to-end — R&amp;D, data, quantization, release — at <b>$200K+ ARR</b>.</li>
-            <li><b>PyTorch → ONNX → TensorRT</b>, INT8/FP16, FastAPI/C++: <b>600+ FPS</b> on RTX 4090, <b>−70% latency</b>, <b>&lt;5% accuracy loss</b>.</li>
-            <li>Automatic <b>QCA</b> pipeline in <b>&lt;4 s</b>; <b>U-Net++ (ResNet50)</b> at <b>0.94 Dice</b>. Led a <b>6-engineer team</b>.</li>
+            <li>Owned <b>AIMAG</b> ($200K+ ARR) from datasets through release after clinical trials.</li>
+            <li>PyTorch → ONNX → TensorRT, INT8/FP16: <b>sub-5 ms/frame</b> for 4× upsampling on RTX 4090.</li>
+            <li>QCA pipeline in <b>&lt;4 s</b>; U-Net++ at <b>0.94 Dice</b>; led <b>6 engineers</b>.</li>
+            <li>Co-inventor: <b>granted patent</b> (No. 604176) + 2 pending in X-ray enhancement.</li>
           </ul>
-          <div class="tl-subblock">
-            <div class="tl-role">Image Quality Engineer Intern · Nov 2022 — May 2023</div>
-            <p class="tl-lede">
-              Motion-compensated stitching &amp; denoising for <b>DSA</b> — <b>+20% clarity</b> at
-              <b>&lt;2-px</b> registration error.
-            </p>
-          </div>
-          <div class="tl-subblock">
-            <div class="tl-role">Patents applied — 3</div>
-            <ul>
-              <li><b>AI-powered X-ray image enhancement</b> (202541071194) — single-image blind super-resolution &amp; denoising.</li>
-              <li><b>Enhancing body part from angiography loop</b> (202441009957) — dynamic roadmap generation from DSA sequences.</li>
-              <li><b>Image enhancement in X-ray fluoroscopy</b> (202541041511) — real-time contrast enhancement &amp; denoising.</li>
-            </ul>
-          </div>
-        </div>
+        </article>
+      </div>
+    </section>
 
-        <div class="tl-item">
-          <div class="tl-head">
-            <h3>Education</h3>
-          </div>
-          <div class="edu-grid">
-            <div class="edu-item">
-              <div class="edu-item__top">
-                <span class="d">M.Tech, AI &amp; Machine Learning</span>
-                <span class="y">2025 — 2027</span>
-              </div>
-              <div class="o">BITS Pilani</div>
-            </div>
-            <div class="edu-item">
-              <div class="edu-item__top">
-                <span class="d">B.Tech, Computer Science &amp; Engineering</span>
-                <span class="y">2019 — 2023</span>
-              </div>
-              <div class="o">BIT Durg</div>
-            </div>
-          </div>
+    <!-- ---------------------------------------------- BLOG (row 2, left) -->
+    <section class="panel" id="blog">
+      <div class="panel__head">
+        <h2><span class="kicker">02</span>Writing</h2>
+        <p class="panel__sub">The math is shown and every number is measured.</p>
+      </div>
+      <div class="posts">
+        <a class="post-card reveal" href="posts/ipic-v2-scale.html"><span class="post-card__tag">Performance</span><h3>Scaling a vector index to 350,000 files: sharding, backpressure, and a CLIP vision lane</h3><p>Part 3 of the ipic build log: per-root shards, bounded-channel backpressure, a compute budget, and measured results at 350k-file scale.</p></a>
+        <a class="post-card reveal" href="posts/inference-lab.html"><span class="post-card__tag">Part 1</span><h3>Serving an LLM on a MacBook Pro: mlx-lm vs llama.cpp, from 1 user to 32</h3><p>Both engines under one fairness contract: 45–56 tok/s single-stream, throughput flat from 1 to 32 users, and crash forensics that find the lock.</p></a>
+        <a class="post-card reveal" href="posts/inference-lab-2.html"><span class="post-card__tag">Part 2</span><h3>Multi-instance LLM serving: why 3× the memory bought only 9% more throughput</h3><p>K process-isolated instances behind one queue: +9% for 3× the RAM. One instance already saturates the M4 Pro's memory bus.</p></a>
+        <a class="post-card reveal" href="posts/int8-quantization.html"><span class="post-card__tag">Inference</span><h3>How INT8 quantization works: calibration, error bounds, and why accuracy barely drops</h3><p>The affine map derived, the s/2 error bound, three calibrators that disagree on purpose, and the per-channel trick worth +6 dB.</p></a>
+        <a class="post-card reveal" href="posts/image-search-geometry.html"><span class="post-card__tag">Retrieval</span><h3>Cosine similarity vs Euclidean distance: what matters for image search</h3><p>The cosine/L2 proof, what precision 1.00 with recall 0.87 actually diagnoses, and when exact search dies by arithmetic.</p></a>
+        <a class="post-card reveal" href="posts/dice-imbalance.html"><span class="post-card__tag">Medical CV</span><h3>Class imbalance in medical segmentation: why cross-entropy fails and Dice loss works</h3><p>The target vessel is 0.39% of the pixels; the standard loss trains a model that's great at everything else. Derived, then fixed.</p></a>
+        <a class="post-card reveal" href="posts/gram-matrix.html"><span class="post-card__tag">Deep Learning</span><h3>How neural style transfer works: VGG features, Gram matrices, and receptive fields</h3><p>Style transfer from zero, its key object provably discarding all position information (measured: 1.7e-18), and the receptive-field arithmetic.</p></a>
+        <a class="post-card reveal" href="posts/ipic-architecture.html"><span class="post-card__tag">Rust</span><h3>On-device semantic file search in Rust: the ipic engine architecture</h3><p>Part 1: three retrieval lanes fused by RRF, an i8-quantized mmap'd vector store, whisper on CPU, crash-safety by job state.</p></a>
+        <a class="post-card reveal" href="posts/ipic-hybrid-search.html"><span class="post-card__tag">Hybrid Search</span><h3>Hybrid search with reciprocal rank fusion: semantic, keyword, filename, and vision lanes</h3><p>Part 2: weighted RRF derived from requirements and computed on a worked example. No re-ranker, 4–10 ms.</p></a>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------- OPEN SOURCE (row 2, right) -->
+    <section class="panel" id="lab">
+      <div class="panel__head">
+        <h2><span class="kicker">03</span>Open source</h2>
+        <p class="panel__sub">Fixes upstream into the engines I depend on, and side projects with real inputs and real outputs.</p>
+      </div>
+
+      <h3 class="sublabel">Upstream contributions</h3>
+      <div class="oss-list">
+        <a class="oss-row reveal" href="https://github.com/microsoft/onnxruntime/pull/33091" target="_blank" rel="noopener">
+          <span class="oss-row__repo">onnxruntime</span>
+          <span class="oss-row__body"><span class="oss-row__title">ReshapeFusion crash fix — node-produced shape inputs</span><span class="oss-row__desc">Session creation failed on runtime-computed shapes; the fusion now handles them instead of asserting.</span></span>
+          <span class="oss-row__state oss-row__state--landed">merged · #33091</span>
+        </a>
+        <a class="oss-row reveal" href="https://github.com/pytorch/pytorch/pull/200180" target="_blank" rel="noopener">
+          <span class="oss-row__repo">pytorch</span>
+          <span class="oss-row__body"><span class="oss-row__title">int32 quantization exports as valid ops</span><span class="oss-row__desc">ONNX export emitted an invalid QuantizeLinear; it now emits ops the standard can run.</span></span>
+          <span class="oss-row__state oss-row__state--landed">in main · #200180</span>
+        </a>
+        <a class="oss-row reveal" href="https://github.com/ml-explore/mlx-lm/pull/1944" target="_blank" rel="noopener">
+          <span class="oss-row__repo">mlx-lm</span>
+          <span class="oss-row__body"><span class="oss-row__title">Prompt-cache byte budget, enforced continuously</span><span class="oss-row__desc">The budget was checked only at admission; trimming now runs after every serving step and /health reports stalls.</span></span>
+          <span class="oss-row__state oss-row__state--open">open · #1944</span>
+        </a>
+        <a class="oss-row reveal" href="https://github.com/soketlabs/loop/pull/44" target="_blank" rel="noopener">
+          <span class="oss-row__repo">loop</span>
+          <span class="oss-row__body"><span class="oss-row__title">web_fetch / web_search with an SSRF-hardened client</span><span class="oss-row__desc">For a Rust agent harness: rejects private and cloud-metadata targets, re-validates redirects, pluggable search backends. The acknowledged foundation of loop's shipped web tools (merged in #59, which builds on this PR).</span></span>
+          <span class="oss-row__state oss-row__state--open">open · #44</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="panel panel--quiet" id="lab-projects">
+      <h3 class="sublabel">Side projects</h3>
+      <a class="feat reveal" href="https://github.com/anubhavagr/ipic" target="_blank" rel="noopener">
+        <div class="feat__media"><img src="assets/img/posts/ipic-architecture/app-search.png" alt="ipic app: a natural-language search returning 100 ranked hits across file types" loading="lazy" /></div>
+        <div class="feat__body">
+          <h3>ipic — a file manager that understands your files</h3>
+          <p>Fully on-device RAG over your entire home directory: ranked results across text, PDFs, audio, video and images. Rust, local whisper, i8-quantized vectors. Shipped as a macOS DMG.</p>
+          <div class="chips"><span class="chip">Rust</span><span class="chip">Hybrid RAG</span><span class="chip">Whisper</span><span class="chip">SQLite FTS5</span><span class="chip">ONNX</span></div>
+        </div>
+      </a>
+    </section>
+
+    <section class="panel panel--quiet" id="lab-repos">
+      <h3 class="sublabel">More repositories</h3>
+      <div class="more-repos">
+        <a class="more-repos__row reveal" href="https://github.com/anubhavagr/ArterySeg" target="_blank" rel="noopener"><b>ArterySeg</b><span>Coronary segmentation, U-Net++/ResNet50, TensorRT export</span><em>→</em></a>
+        <a class="more-repos__row reveal" href="https://github.com/anubhavagr/find-me-lens" target="_blank" rel="noopener"><b>find-me-lens</b><span>Image retrieval over FAISS, five CNN backbones benchmarked</span><em>→</em></a>
+        <a class="more-repos__row reveal" href="https://github.com/anubhavagr/pytorch-cpp-tensorrt" target="_blank" rel="noopener"><b>pytorch-cpp-tensorrt</b><span>PyTorch → ONNX → TensorRT → C++, one notebook per stage</span><em>→</em></a>
+        <a class="more-repos__row reveal" href="https://github.com/anubhavagr/no_more_BWs" target="_blank" rel="noopener"><b>no_more_BWs</b><span>ECCV'16 vs SIGGRAPH'17 colorization, side by side</span><em>→</em></a>
+        <a class="more-repos__row reveal" href="https://github.com/anubhavagr/neural-style-transfer" target="_blank" rel="noopener"><b>neural-style-transfer</b><span>Gatys 2015 reimplemented from scratch</span><em>→</em></a>
+        <a class="more-repos__row reveal" href="https://github.com/anubhavagr/Panorama-image-stitching" target="_blank" rel="noopener"><b>Panorama-image-stitching</b><span>Matching → homography → warping → blending, end to end</span><em>→</em></a>
+      </div>
+      <p class="panel__foot"><a class="text-link" href="https://github.com/anubhavagr?tab=repositories" target="_blank" rel="noopener">All repositories →</a></p>
+    </section>
+
+    <!-- ---------------------------------------------- SKILLS (row 3, left) -->
+    <section class="panel" id="skills">
+      <div class="panel__head">
+        <h2><span class="kicker">05</span>Skills</h2>
+      </div>
+      <div class="skill-rows">
+        <div class="skill-row reveal"><span class="skill-row__label">Languages &amp; Tools</span><span class="skill-row__items">Python, Rust, Bash, Git, Linux</span></div>
+        <div class="skill-row reveal"><span class="skill-row__label">Model Optimization</span><span class="skill-row__items">PyTorch, ONNX (dynamic shapes, control flow, opsets), ONNX Runtime, TensorRT, trtexec</span></div>
+        <div class="skill-row reveal"><span class="skill-row__label">Quantization &amp; On-Device</span><span class="skill-row__items">INT8/FP16 PTQ with calibration, 4-bit GGUF/MLX — llama.cpp, mlx-lm</span></div>
+        <div class="skill-row reveal"><span class="skill-row__label">ML Frameworks</span><span class="skill-row__items">PyTorch, OpenCV, Scikit-learn, XGBoost, NumPy, Pandas</span></div>
+        <div class="skill-row reveal"><span class="skill-row__label">Platform</span><span class="skill-row__items">Docker, GitLab CI/CD, AWS (EC2), FastAPI, Grafana / Loki / Mimir / Tempo, MongoDB, SQLite</span></div>
+      </div>
+    </section>
+
+    <!-- -------------------------------------------- CONTACT (row 3, right) -->
+    <section class="panel" id="contact">
+      <div class="panel__head">
+        <h2><span class="kicker">06</span>Contact</h2>
+      </div>
+      <div class="contact-band reveal">
+        <p>Open to AI engineering roles and collaborations — especially systems where inference has to be fast, measured, and honest. Email is the fastest way to reach me.</p>
+        <div class="contact-band__actions">
+          <a class="btn btn--primary btn--sm" href="mailto:anubhavagr.mail@gmail.com">Email me →</a>
+          <a class="btn btn--ghost btn--sm js-resume-link" href="assets/anubhav-agrawal-resume.pdf" download>Download résumé</a>
         </div>
       </div>
     </section>
 
-    <!-- ------------------------------------------------------------ TOOLKIT -->
-    <section class="section" id="skills">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">05</span><span class="label">Skills</span></h2>
-      </div>
-      <div class="skills-grid">
-        <div class="skill-group">
-          <div class="skill-group__label">Languages</div>
-          <div class="skill-group__items">Python, C++, Rust</div>
-        </div>
-        <div class="skill-group">
-          <div class="skill-group__label">ML &amp; Deep Learning</div>
-          <div class="skill-group__items">PyTorch, TensorFlow, OpenCV, Scikit-learn, XGBoost, NumPy, Pandas, Albumentations, TorchVision, SciPy</div>
-        </div>
-        <div class="skill-group">
-          <div class="skill-group__label">LLMs &amp; RAG</div>
-          <div class="skill-group__items">LangGraph, LangChain, HuggingFace Transformers, Vector Search, Cross-Encoder Re-ranking, Embeddings, BM25 / Hybrid Retrieval</div>
-        </div>
-        <div class="skill-group">
-          <div class="skill-group__label">Inference &amp; Serving</div>
-          <div class="skill-group__items">TensorRT, ONNX / ONNX Runtime, INT8 / FP16 Quantization, CUDA, FastAPI, Docker</div>
-        </div>
-        <div class="skill-group">
-          <div class="skill-group__label">Tools</div>
-          <div class="skill-group__items">Git, Linux, SQLite</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ------------------------------------------------------------ CONTACT -->
-    <section class="section" id="contact">
-      <div class="section__head">
-        <h2 class="section__title"><span class="kicker">06</span><span class="label">Contact</span></h2>
-      </div>
-      <div class="lead" style="border-left-color: var(--accent);">
-        <div class="lead__bar">
-          <p style="font-size:1.05rem; color:var(--text);">
-            Open to AI engineering roles and collaborations — especially systems
-            where inference has to be fast, measured, and honest. Email is the
-            fastest way to reach me.
-          </p>
-          <p style="margin-top:1rem; display:flex; flex-wrap:wrap; gap:0.5rem;">
-            <a class="btn btn--primary btn--sm" href="mailto:anubhavagr.mail@gmail.com">Email me →</a>
-            <a class="btn btn--ghost btn--sm js-resume-link" href="assets/anubhav-agrawal-resume.pdf" download>Download résumé</a>
-            <a class="btn btn--ghost btn--sm" href="https://github.com/anubhavagr" target="_blank" rel="noopener">GitHub</a>
-            <a class="btn btn--ghost btn--sm" href="https://www.linkedin.com/in/anubhav-agr/" target="_blank" rel="noopener">LinkedIn</a>
-          </p>
-        </div>
-      </div>
-    </section>
-
-    </div><!-- /content -->
-    </div><!-- /layout -->
-  </main>
+  </div><!-- /board -->
+</main>
 
   <!-- ============================================================== FOOTER -->
   <footer class="footer">
@@ -517,6 +308,6 @@
   </button>
 
   <script src="assets/js/data.js?v=11"></script>
-  <script src="assets/js/main.js?v=8"></script>
+  <script src="assets/js/main.js?v=10"></script>
 </body>
 </html>
